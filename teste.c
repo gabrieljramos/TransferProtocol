@@ -73,7 +73,7 @@ void envia_mensagem(int sockfd, const char *interface, unsigned char seq, unsign
     printf("asd\n");
     if (len > MAX_DADOS) len = MAX_DADOS;
 
-    f.marcador = 0;
+    f.marcador = MARCADOR;
     f.tamanho = (unsigned char)len;
     f.seq_tipo = ((seq & 0x1F) << 3) | (tipo & 0x0F);
     memcpy(f.dados, mensagem, len);
