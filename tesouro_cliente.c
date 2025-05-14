@@ -26,6 +26,12 @@ typedef struct {
     unsigned char dados[MAX_DADOS];
 } __attribute__((packed)) Frame;
 
+long long timestamp() {
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    return tp.tv_sec * 1000LL + tp.tv_usec / 1000;
+}
+
 int cria_raw_socket(const char *interface) {
     int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
     if (sockfd < 0) {
@@ -85,16 +91,17 @@ void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char 
     f->checksum = calcula_checksum(f);
 }
 
-//Loop p/ aguardar a espera de um ACK/NACK/OK+NACK
-int espera_ack(int sockfd, unsigned char seq_esperado) {
+int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
    
+    Frame resposta;
+
     //Define timeout
-    const int timeoutMillis = TIMEOUT_MILLIS;
     struct timeval timeout = { .tv_sec = timeoutMillis / 1000, .tv_usec = (timeoutMillis % 1000) * 1000 };
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
 
-    Frame resposta;
-    while (1) {
+    long long inicio = timestamp();
+
+    while (timestamp() - inicio <= timeoutMillis) {
         ssize_t n = recv(sockfd, &resposta, sizeof(resposta), 0);
         if (n > 0 && resposta.marcador == MARCADOR) {
             printf("[Cliente] Recebido %zd bytes\n", n);
@@ -113,6 +120,7 @@ int espera_ack(int sockfd, unsigned char seq_esperado) {
                 return 2;
             } else if (resposta.tipo == 6 && resposta.seq == seq_esperado) { // OK + ACK
                 printf("[Cliente] Texto recebido para seq=%u\n", seq_esperado);
+                printf("File: %s\n", resposta.dados);
                 return 2;
             } 
             else {
@@ -132,41 +140,31 @@ void envia_mensagem(int sockfd, const char *interface, unsigned char seq, unsign
     memset(&f, 0, sizeof(Frame));
     monta_frame(&f, seq, tipo, NULL, tipo);
 
-    /*struct sockaddr_ll dst = {0};
-    struct ifreq ifr;
-    memset(&ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, interface, IFNAMSIZ - 1);
-    ioctl(sockfd, SIOCGIFINDEX, &ifr);
-
-    dst.sll_ifindex = ifr.ifr_ifindex;
-    dst.sll_halen = 6;
-    dst.sll_addr[0] = 0xFF; // MAC broadcast
-    dst.sll_addr[1] = 0xFF;
-    dst.sll_addr[2] = 0xFF;
-    dst.sll_addr[3] = 0xFF;
-    dst.sll_addr[4] = 0xFF;
-    dst.sll_addr[5] = 0xFF;*/
-
+    int timeout = TIMEOUT_MILLIS;
     int tentativas = 0;
     int ack_ok = 0;
-    while (tentativas < MAX_RETRANSMISSIONS && !ack_ok) {
-        //int bytes = sendto(sockfd, &f, sizeof(Frame), 0, (struct sockaddr *)&dst, sizeof(dst));
-        int bytes = send(sockfd, &f, sizeof(Frame), 0);
-        if (bytes < 0) perror("sendto");
-        else printf("[Cliente] Frame enviado (seq=%u)\n", seq);
 
-        int resultado = espera_ack(sockfd, seq);
+    while (tentativas < MAX_RETRANSMISSIONS && !ack_ok) {
+
+        int bytes = send(sockfd, &f, sizeof(Frame), 0);
+        if (bytes < 0) 
+            perror("sendto");
+        else 
+            printf("[Cliente] Frame enviado (seq=%u)\n", seq);
+
+        int resultado = espera_ack(sockfd, seq, timeout);
+
         if (resultado == 1) //Caso o ack tenha chego com sucesso
             ack_ok = 1;
-        else if (resultado == 2) {
+        else if (resultado == 2) { //Caso ACK tenha chego com sucesso e encontrado um tesouro
             ack_ok = 1;
-            resultado = espera_ack(sockfd, seq);
+            resultado = espera_ack(sockfd, seq, timeout);
         }
-
-        else //timeout/NACK
+        else { //timeout/NACK
             tentativas++;
+            timeout *= 2;
+        }
     }
-
     if (!ack_ok) { //Caso num de tentativa tenha excedido o maximo
         printf("[Cliente] Falha após %d tentativas\n", MAX_RETRANSMISSIONS);
     }
