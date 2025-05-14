@@ -86,8 +86,6 @@ void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char 
 //Busca um arquivo baseado nos tipos nas extencoes
 int find_file(int file_num, unsigned char *file_name) {
 
-    //unsigned char file_name[64];
-
     for (int i = 0; i < 3; i++) {
         snprintf(file_name, sizeof(file_name), "%d%s", file_num, extensoes[i]);
         FILE *fp = fopen(file_name, "rb");
@@ -98,28 +96,17 @@ int find_file(int file_num, unsigned char *file_name) {
         }
     }
     return -1;
-
 }
 
 //Envia ACK/NACK/OK+ACK
 void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct sockaddr_ll* origem, unsigned char *msg) {
+
     Frame resposta;
 
     if (msg == NULL)
         monta_frame(&resposta, seq, tipo, NULL, 0);
     else
         monta_frame(&resposta, seq, tipo, msg, sizeof(msg));
-
-    //Necessario para usar Ethernet
-    // Preenche destino (broadcast) para garantir que o cliente ouça
-    /*struct sockaddr_ll dst = *origem;
-    dst.sll_halen = 6;
-    dst.sll_addr[0] = 0xFF;
-    dst.sll_addr[1] = 0xFF;
-    dst.sll_addr[2] = 0xFF;
-    dst.sll_addr[3] = 0xFF;
-    dst.sll_addr[4] = 0xFF;
-    dst.sll_addr[5] = 0xFF;*/
 
     //sendto(sockfd, &resposta, sizeof(resposta), 0, (struct sockaddr*)&dst, sizeof(dst));
     send(sockfd, &resposta, sizeof(resposta), 0);
@@ -131,7 +118,8 @@ void escuta_mensagem(int sockfd, tes_t* tesouros) {
         struct sockaddr_ll addr;
         socklen_t addrlen = sizeof(addr);
         ssize_t bytes = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&addr, &addrlen);
-        if (bytes < 5) continue;
+        if (bytes < 5) 
+            continue;
 
         for (ssize_t i = 0; i < bytes - 4; ) { // sem ++ aqui
             if (buffer[i] == MARCADOR) {
@@ -154,10 +142,14 @@ void escuta_mensagem(int sockfd, tes_t* tesouros) {
                 }
 
                 //Baseado no tipo da msg recebida, move o personagem
-                if (tipo == 11) update_x('-', &current_pos);
-                else if (tipo == 13) update_y('-',&current_pos);
-                else if (tipo == 12) update_x('+', &current_pos);
-                else if (tipo == 10) update_y('+',&current_pos);
+                if (tipo == 11) 
+                    update_x('-', &current_pos);
+                else if (tipo == 13) 
+                    update_y('-',&current_pos);
+                else if (tipo == 12) 
+                    update_x('+', &current_pos);
+                else if (tipo == 10) 
+                    update_y('+',&current_pos);
 
                 //Aloca memoria p/ nova posicao e salva ela na lista 
                 move_t* new_move = malloc(sizeof(move_t));
