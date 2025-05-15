@@ -31,3 +31,5 @@ long long timestamp();
 int cria_raw_socket(const char *interface);
 unsigned char calcula_checksum(Frame *f);
 void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam);
+void envia_mensagem(int sockfd, const char *interface, unsigned char seq, Frame f);
+int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis);
