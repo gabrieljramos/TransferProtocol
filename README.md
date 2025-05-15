@@ -1,5 +1,7 @@
 - Disclaimer: Haha, esqueci q era p/ fazer em C++
 
+- So agr q eu tinha visto q era pra fazer o nosso proprio timeout, mas ta feito ja
+
 - Antes de executar os programas rodar:
   - sudo ip link add veth0 type veth peer name veth1
   - sudo ip link set veth0 up
