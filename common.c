@@ -130,48 +130,6 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
     }
 }
 
-/*void cliente_recebe_arquivos(int sockfd) {
-    while (1) {
-        Frame resposta;
-        ssize_t n = recv(sockfd, &resposta, sizeof(resposta), 0);
-
-        if (n <= 0) break;
-
-        if (resposta.marcador != MARCADOR) continue;
-
-        unsigned char checksum_esperado = calcula_checksum(&resposta);
-        if (resposta.checksum != checksum_esperado) {
-            printf("[Cliente] Checksum inválido (esperado=%u, recebido=%u)\n", checksum_esperado, resposta.checksum);
-            
-            // Envia NACK
-            Frame nack;
-            monta_frame(&nack, resposta.seq, 1, NULL, 0); // tipo 1 = NACK
-            send(sockfd, &nack, sizeof(Frame), 0);
-            printf("[Cliente] NACK enviado para seq=%u\n", resposta.seq);
-            continue;
-        }
-
-        if (resposta.tipo >= 6 && resposta.tipo <= 8) {
-            printf("[Cliente] Arquivo recebido: %s\n", resposta.dados);
-
-            // Envia ACK de volta
-            Frame ack;
-            monta_frame(&ack, resposta.seq, 0, NULL, 0); // tipo 0 = ACK
-            send(sockfd, &ack, sizeof(Frame), 0);
-            printf("[Cliente] ACK enviado para tipo=%u seq=%u\n", resposta.tipo, resposta.seq);
-            break;
-        } 
-        else if (resposta.tipo == 15) { // sinal de fim de transmissão, opcional
-            printf("[Cliente] Fim da transmissão de arquivos\n");
-            break;
-        }
-        else {
-            printf("[Cliente] Tipo inesperado recebido (tipo=%u)\n", resposta.tipo);
-            break;
-        }
-    }
-}*/
-
 void envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam, int modo_servidor, struct sockaddr_ll* destino) {
     int timeout = TIMEOUT_MILLIS;
     int tentativas = 0;
@@ -268,8 +226,11 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                         if (tipo_arq >= 0) {
                             envia_mensagem(sockfd, f->seq, tipo_arq + 6, nome, strlen((char*)nome), 1, &addr);
                         }
-                        else
-                            return;
+                        else {
+                            printf("[Servidor] Arquivo não encontrado para o tesouro %d\n", tesouros[tesouro].id);
+                            unsigned char error_code = '2';
+                            envia_resposta(sockfd, f->seq, 15, &addr, &error_code);
+                        }
                     } else {
                         envia_resposta(sockfd, f->seq, 0, &addr, NULL); // ACK
                     }
@@ -283,7 +244,7 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                         send(sockfd, &ack, sizeof(Frame), 0);
                         return;
                     } else if (tipo == 15) {
-                        printf("[Cliente] Fim da transmissão\n");
+                        printf("File Not Found, Error Code: %s\n", f->dados);
                         return;
                     } else {
                         printf("[Cliente] Tipo inesperado %u\n", tipo);
