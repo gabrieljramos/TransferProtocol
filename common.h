@@ -34,3 +34,4 @@ void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char 
 //void envia_mensagem(int sockfd, const char *interface, unsigned char seq, Frame f);
 int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis);
 void envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam, int modo_servidor, struct sockaddr_ll* destino);
+void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* current_pos, struct sockaddr_ll* cliente_addr);

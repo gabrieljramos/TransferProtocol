@@ -1,10 +1,10 @@
 #include "common.h"
 
-unsigned char *extensoes[] = {".txt", ".mp4", ".jpeg"};
-coord_t current_pos;
+//unsigned char *extensoes[] = {".txt", ".mp4", ".jpeg"};
+//coord_t current_pos;
 
 //Busca um arquivo baseado nos tipos nas extencoes
-int find_file(int file_num, unsigned char *file_name) {
+/*int find_file(int file_num, unsigned char *file_name) {
 
     for (int i = 0; i < 3; i++) {
         snprintf(file_name, sizeof(file_name), "%d%s", file_num, extensoes[i]);
@@ -16,10 +16,10 @@ int find_file(int file_num, unsigned char *file_name) {
         }
     }
     return -1;
-}
+}*/
 
 //Envia ACK/NACK/OK+ACK
-void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct sockaddr_ll* origem, unsigned char *msg) {
+/*void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct sockaddr_ll* origem, unsigned char *msg) {
 
     Frame resposta;
 
@@ -28,11 +28,10 @@ void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct so
     else
         monta_frame(&resposta, seq, tipo, msg, strlen((char*)msg));
 
-    //sendto(sockfd, &resposta, sizeof(resposta), 0, (struct sockaddr*)&dst, sizeof(dst));
     send(sockfd, &resposta, sizeof(resposta), 0);
-}
+}*/
 
-void escuta_mensagem(int sockfd, tes_t* tesouros) {
+/*void escuta_mensagem(int sockfd, tes_t* tesouros) {
     unsigned char buffer[2048];
     while (1) {
         struct sockaddr_ll addr;
@@ -92,20 +91,7 @@ void escuta_mensagem(int sockfd, tes_t* tesouros) {
                         return;
                     }
                     else {
-                        envia_mensagem(sockfd, f->seq, file_type + 6, file_name, strlen((char*)file_name), 1, &addr);
-                        /*int ack = 0;
-                        int tentativas = 0;
-                        int timeout = TIMEOUT_MILLIS;
-                        while (tentativas < MAX_RETRANSMISSIONS && !ack) {
-                            envia_resposta(sockfd, f->seq, file_type+6 , &addr, file_name);
-                            int resultado = espera_ack(sockfd, f->seq, timeout);
-                            if (resultado == 1) {
-                                ack = 1;
-                            } else {
-                                tentativas++;
-                                timeout *= 2;
-                            }
-                        }*/                       
+                        envia_mensagem(sockfd, f->seq, file_type + 6, file_name, strlen((char*)file_name), 1, &addr);                    
                     }
                 }
                 else
@@ -117,7 +103,7 @@ void escuta_mensagem(int sockfd, tes_t* tesouros) {
             }
         }   
     }
-}
+}*/
 
 int main(int argc, char* argv[]) {
 
@@ -135,7 +121,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 8; i++) {
         printf("(%d,%d)\n", tesouros[i].pos.x,tesouros[i].pos.y);
     }
-
+    coord_t current_pos;
     //Salva a posicao inicial
     current_pos.x = 7;
     current_pos.y = 0;
@@ -145,8 +131,8 @@ int main(int argc, char* argv[]) {
     int sockfd = cria_raw_socket(interface);
 
     //Comeca a esperar por msgs
-    escuta_mensagem(sockfd,tesouros);
-
+    //escuta_mensagem(sockfd,tesouros);
+    escuta_mensagem(sockfd, 1, tesouros, &current_pos, NULL);
     close(sockfd);
     return 0;
 }

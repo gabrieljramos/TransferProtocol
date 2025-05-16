@@ -1,5 +1,5 @@
 #include "common.h"
-
+unsigned char *extensoes[] = {".txt", ".mp4", ".jpeg"};
 long long timestamp() {
     struct timeval tp;
     gettimeofday(&tp, NULL);
@@ -37,6 +37,18 @@ int cria_raw_socket(const char *interface) {
     return sockfd;
 }
 
+void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct sockaddr_ll* origem, unsigned char *msg) {
+
+    Frame resposta;
+
+    if (msg == NULL)
+        monta_frame(&resposta, seq, tipo, NULL, 0);
+    else
+        monta_frame(&resposta, seq, tipo, msg, strlen((char*)msg));
+
+    send(sockfd, &resposta, sizeof(resposta), 0);
+}
+
 //Faz a soma de todos os campos necessarios e retorna seu valor
 unsigned char calcula_checksum(Frame *f) {
     unsigned char sum = 0;
@@ -63,6 +75,20 @@ void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char 
         memcpy(f->dados, dados, tam);
     }
     f->checksum = calcula_checksum(f);
+}
+
+int find_file(int file_num, unsigned char *file_name) {
+
+    for (int i = 0; i < 3; i++) {
+        snprintf(file_name, sizeof(file_name), "%d%s", file_num, extensoes[i]);
+        FILE *fp = fopen(file_name, "rb");
+        if (fp) {
+            printf("Arquivo encontrado: %sTamanho: %ld\n", file_name, strlen(file_name));
+            fclose(fp);
+            return i;
+        }
+    }
+    return -1;
 }
 
 int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
@@ -104,7 +130,7 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
     }
 }
 
-void cliente_recebe_arquivos(int sockfd) {
+/*void cliente_recebe_arquivos(int sockfd) {
     while (1) {
         Frame resposta;
         ssize_t n = recv(sockfd, &resposta, sizeof(resposta), 0);
@@ -144,7 +170,7 @@ void cliente_recebe_arquivos(int sockfd) {
             break;
         }
     }
-}
+}*/
 
 void envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam, int modo_servidor, struct sockaddr_ll* destino) {
     int timeout = TIMEOUT_MILLIS;
@@ -176,7 +202,7 @@ void envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned 
         else if (resultado == 2 && !modo_servidor) {
             ack = 1;
             // Cliente recebeu OK+ACK ou dados de arquivo, entra no modo passivo
-            cliente_recebe_arquivos(sockfd);
+            escuta_mensagem(sockfd, 0, NULL, NULL, NULL);
         } 
         else {
             tentativas++;
@@ -186,5 +212,88 @@ void envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned 
 
     if (!ack) {
         printf("[%s] Falha após %d tentativas no seq=%u\n", modo_servidor ? "Servidor" : "Cliente", MAX_RETRANSMISSIONS, seq);
+    }
+}
+
+void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* current_pos, struct sockaddr_ll* cliente_addr) {
+    unsigned char buffer[2048];
+
+    while (1) {
+        struct sockaddr_ll addr;
+        socklen_t addrlen = sizeof(addr);
+        ssize_t bytes = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&addr, &addrlen);
+        if (bytes < 5) continue;
+
+        for (ssize_t i = 0; i < bytes - 4;) {
+            if (buffer[i] == MARCADOR) {
+                Frame *f = (Frame *)&buffer[i];
+                unsigned char esperado = calcula_checksum(f);
+
+                if (f->checksum != esperado) {
+                    printf("[%s] Checksum inválido seq=%u\n", modo_servidor ? "Servidor" : "Cliente", f->seq);
+
+                    Frame nack;
+                    monta_frame(&nack, f->seq, 1, NULL, 0); // tipo 1 = NACK
+                    send(sockfd, &nack, sizeof(Frame), 0);
+                    i += sizeof(Frame);
+                    continue;
+                }
+
+                unsigned char tipo = f->tipo & 0x0F;
+
+                if (modo_servidor) {
+                    // Ignora frames de controle
+                    if (tipo == 0 || tipo == 1 || tipo == 2) {
+                        i += sizeof(Frame);
+                        continue;
+                    }
+
+                    // Processa movimento
+                    if (tipo == 11) update_x('-', current_pos);
+                    else if (tipo == 12) update_x('+', current_pos);
+                    else if (tipo == 13) update_y('-', current_pos);
+                    else if (tipo == 10) update_y('+', current_pos);
+
+                    move_t *mv = malloc(sizeof(move_t));
+                    mv->pos = *current_pos;
+                    mv->next = mv->prev = NULL;
+                    add_move(mv);
+                    printf("[Servidor] Posição (%d, %d) salva\n", mv->pos.x, mv->pos.y);
+
+                    int tesouro = treasure_found(tesouros, current_pos->x, current_pos->y);
+                    if (tesouro >= 0) {
+                        envia_resposta(sockfd, f->seq, 2, &addr, NULL); // OK+ACK
+                        unsigned char nome[64];
+                        int tipo_arq = find_file(tesouros[tesouro].id, nome);
+                        if (tipo_arq >= 0) {
+                            envia_mensagem(sockfd, f->seq, tipo_arq + 6, nome, strlen((char*)nome), 1, &addr);
+                        }
+                        else
+                            return;
+                    } else {
+                        envia_resposta(sockfd, f->seq, 0, &addr, NULL); // ACK
+                    }
+
+                } else {
+                    // Modo cliente, só aceita tipos 6–8
+                    if (tipo >= 6 && tipo <= 8) {
+                        printf("[Cliente] Arquivo recebido: %s\n", f->dados);
+                        Frame ack;
+                        monta_frame(&ack, f->seq, 0, NULL, 0); // ACK
+                        send(sockfd, &ack, sizeof(Frame), 0);
+                        return;
+                    } else if (tipo == 15) {
+                        printf("[Cliente] Fim da transmissão\n");
+                        return;
+                    } else {
+                        printf("[Cliente] Tipo inesperado %u\n", tipo);
+                    }
+                }
+
+                i += sizeof(Frame);
+            } else {
+                i++;
+            }
+        }
     }
 }
