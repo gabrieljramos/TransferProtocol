@@ -73,6 +73,7 @@ void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char 
         if (tam > 127) tam = 127;
         f->tamanho = tam;
         memcpy(f->dados, dados, tam);
+        f->dados[tam] = '\0';
     }
     f->checksum = calcula_checksum(f);
 }
@@ -228,8 +229,8 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                         }
                         else {
                             printf("[Servidor] Arquivo não encontrado para o tesouro %d\n", tesouros[tesouro].id);
-                            unsigned char error_code = '2';
-                            envia_resposta(sockfd, f->seq, 15, &addr, &error_code);
+                            unsigned char error_code[2] = {'2', '\0'};
+                            envia_resposta(sockfd, f->seq, 15, &addr, error_code);
                         }
                     } else {
                         envia_resposta(sockfd, f->seq, 0, &addr, NULL); // ACK
@@ -244,7 +245,8 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                         send(sockfd, &ack, sizeof(Frame), 0);
                         return;
                     } else if (tipo == 15) {
-                        printf("File Not Found, Error Code: %s\n", f->dados);
+                        if (strcmp((char*)f->dados, "2") == 0)
+                            printf("File Not Found, Error Code: %s\n", f->dados);
                         return;
                     } else {
                         printf("[Cliente] Tipo inesperado %u\n", tipo);
