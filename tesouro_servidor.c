@@ -26,7 +26,7 @@ void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct so
     if (msg == NULL)
         monta_frame(&resposta, seq, tipo, NULL, 0);
     else
-        monta_frame(&resposta, seq, tipo, msg, sizeof(msg));
+        monta_frame(&resposta, seq, tipo, msg, strlen((char*)msg));
 
     //sendto(sockfd, &resposta, sizeof(resposta), 0, (struct sockaddr*)&dst, sizeof(dst));
     send(sockfd, &resposta, sizeof(resposta), 0);
@@ -92,7 +92,19 @@ void escuta_mensagem(int sockfd, tes_t* tesouros) {
                         return;
                     }
                     else {
-                        envia_resposta(sockfd, f->seq, file_type+6 , &addr, file_name); //Caso tenha encontrado
+                        int ack = 0;
+                        int tentativas = 0;
+                        int timeout = TIMEOUT_MILLIS;
+                        while (tentativas < MAX_RETRANSMISSIONS && !ack) {
+                            envia_resposta(sockfd, f->seq, file_type+6 , &addr, file_name);
+                            int resultado = espera_ack(sockfd, f->seq, timeout);
+                            if (resultado == 1) {
+                                ack = 1;
+                            } else {
+                                tentativas++;
+                                timeout *= 2;
+                            }
+                        }                       
                     }
                 }
                 else
@@ -137,4 +149,3 @@ int main(int argc, char* argv[]) {
     close(sockfd);
     return 0;
 }
-

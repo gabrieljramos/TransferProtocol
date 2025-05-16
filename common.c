@@ -65,8 +65,6 @@ void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char 
     f->checksum = calcula_checksum(f);
 }
 
-    //monta_frame(&f, seq, tipo, NULL, tipo); chamar antes
-
 int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
    
     Frame resposta;
@@ -94,9 +92,16 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
             } else if (resposta.tipo == 2 && resposta.seq == seq_esperado) { // OK + ACK
                 printf("[Cliente] Tesouro recebido para seq=%u\n", seq_esperado);
                 return 2;
-            } else if (resposta.tipo == 6 && resposta.seq == seq_esperado) { // OK + ACK
-                printf("[Cliente] Texto recebido para seq=%u\n", seq_esperado);
+            } else if ((resposta.tipo >= 6 && resposta.tipo <= 8) && resposta.seq == seq_esperado) { // OK + ACK
+                printf("[Cliente] Arquivo recebido para seq=%u\n", seq_esperado);
                 printf("File: %s\n", resposta.dados);
+
+                // Envia ACK de volta para o servidor
+                Frame ack_frame;
+                monta_frame(&ack_frame, resposta.seq, 0, NULL, 0); // tipo 0 = ACK
+                send(sockfd, &ack_frame, sizeof(Frame), 0);
+                printf("[Cliente] ACK enviado para tipo=6,7,8 seq=%u\n", resposta.seq);
+
                 return 2;
             } 
             else {
@@ -112,8 +117,6 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
 
 //Funcao que faz o envio de mensagens
 void envia_mensagem(int sockfd, const char *interface, unsigned char seq, Frame f) {
-
-    //memset(&f, 0, sizeof(Frame));
 
     int timeout = TIMEOUT_MILLIS;
     int tentativas = 0;
