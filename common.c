@@ -119,6 +119,11 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
             } else if (resposta.tipo == 2 && resposta.seq == seq_esperado) { // OK + ACK
                 printf("[Cliente] Tesouro recebido para seq=%u\n", seq_esperado);
                 return 2;
+            } else if (resposta.tipo == 15 && resposta.seq == seq_esperado) { // OK + ACK
+                if (strcmp((char*)resposta.dados, "1") == 0) {
+                    printf("[Servidor] Espaco insuficiente para o arquivo\n");
+                    return 3;
+                }
             }
             else {
                 printf("[Cliente] Frame ignorado (tipo=%u, seq=%u)\n", resposta.tipo, resposta.seq);
@@ -131,7 +136,7 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
     }
 }
 
-void envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam, int modo_servidor, struct sockaddr_ll* destino) {
+int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam, int modo_servidor, struct sockaddr_ll* destino) {
     int timeout = TIMEOUT_MILLIS;
     int tentativas = 0;
     int ack = 0;
@@ -157,12 +162,15 @@ void envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned 
 
         if (resultado == 1) {
             ack = 1;
+            return 1;
         } 
         else if (resultado == 2 && !modo_servidor) {
             ack = 1;
             // Cliente recebeu OK+ACK ou dados de arquivo, entra no modo passivo
             escuta_mensagem(sockfd, 0, NULL, NULL, NULL);
-        } 
+        } else if(resultado == 3){
+            return -1;
+        }
         else {
             tentativas++;
             timeout *= 2;
@@ -172,6 +180,9 @@ void envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned 
     if (!ack) {
         printf("[%s] Falha após %d tentativas no seq=%u\n", modo_servidor ? "Servidor" : "Cliente", MAX_RETRANSMISSIONS, seq);
     }
+
+    return 0;
+
 }
 
 void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* current_pos, struct sockaddr_ll* cliente_addr) {
@@ -225,7 +236,23 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                         unsigned char nome[64];
                         int tipo_arq = find_file(tesouros[tesouro].id, nome);
                         if (tipo_arq >= 0) {
-                            envia_mensagem(sockfd, f->seq, tipo_arq + 6, nome, strlen((char*)nome), 1, &addr);
+                            struct stat filestat;
+                            if (stat((char*)nome, &filestat) != 0) {
+                                perror("[Servidor] Erro ao obter informações do arquivo");
+                                return;
+                            }
+
+                            unsigned char tamanho_str[16];
+                            printf("[Servidor] st_size lido de stat(): %ld\n", (long)filestat.st_size);
+                            snprintf(tamanho_str, sizeof(tamanho_str), "%ld", (long)filestat.st_size);
+
+                            int authorized = envia_mensagem(sockfd, f->seq, 4, (unsigned char*)tamanho_str, strlen(tamanho_str), 1, &addr);
+
+                            if (authorized) {
+                                printf("[Servidor] Enviando nome arquivo %s\n", nome);
+                                envia_mensagem(sockfd, f->seq, tipo_arq + 6, nome, strlen((char*)nome), 1, &addr);
+                            }
+
                         }
                         else {
                             printf("[Servidor] Arquivo não encontrado para o tesouro %d\n", tesouros[tesouro].id);
@@ -240,11 +267,41 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     // Modo cliente, só aceita tipos 6–8
                     if (tipo >= 6 && tipo <= 8) {
                         printf("[Cliente] Arquivo recebido: %s\n", f->dados);
+                        envia_resposta(sockfd, f->seq, 0, cliente_addr, NULL); // ACK
+                        return;
+                    } else if (tipo == 4) {
+                        printf("[Cliente] Tamanho do arquivo recebido: %s bytes\n", f->dados);
+                        long file_size = strtol((char*)f->dados, NULL, 10);
+                        printf("[Cliente] Tamanho do arquivo (long): %ld bytes\n", file_size);
+                        struct statvfs statv;
+                        if (statvfs(".", &statv) != 0) {
+                            perror("statvfs");
+                            return;
+                        }
+
+                        long long livre = (long long)statv.f_bsize * statv.f_bavail;
+                        long long margem = file_size + (file_size / 10); // 10% de margem
+
+                        if (livre >= margem) {
+                            printf("[Cliente] Espaço suficiente (%lld bytes disponíveis)\n", livre);
+                            envia_resposta(sockfd, f->seq, 0, cliente_addr, NULL); // ACK
+                        } else {
+                            printf("[Cliente] Espaço insuficiente (%lld bytes livres)\n", livre);
+                            unsigned char error_code[2] = {'1', '\0'};
+                            envia_resposta(sockfd, f->seq, 15, cliente_addr, error_code); // tipo 15 = erro
+                        }
+                        //return;
+                    } else if (tipo == 5) {
+                        printf("[Cliente] Arquivo recebido: %s\n", f->dados);
                         Frame ack;
                         monta_frame(&ack, f->seq, 0, NULL, 0); // ACK
                         send(sockfd, &ack, sizeof(Frame), 0);
                         return;
-                    } else if (tipo == 15) {
+                    } else if (tipo == 14) {
+                        printf("Arquivo não encontrado\n");
+                        return;
+                    }
+                    else if (tipo == 15) {
                         if (strcmp((char*)f->dados, "2") == 0)
                             printf("File Not Found, Error Code: %s\n", f->dados);
                         return;
