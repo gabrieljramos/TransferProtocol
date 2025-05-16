@@ -92,18 +92,7 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
             } else if (resposta.tipo == 2 && resposta.seq == seq_esperado) { // OK + ACK
                 printf("[Cliente] Tesouro recebido para seq=%u\n", seq_esperado);
                 return 2;
-            } else if ((resposta.tipo >= 6 && resposta.tipo <= 8) && resposta.seq == seq_esperado) { // OK + ACK
-                printf("[Cliente] Arquivo recebido para seq=%u\n", seq_esperado);
-                printf("File: %s\n", resposta.dados);
-
-                // Envia ACK de volta para o servidor
-                Frame ack_frame;
-                monta_frame(&ack_frame, resposta.seq, 0, NULL, 0); // tipo 0 = ACK
-                send(sockfd, &ack_frame, sizeof(Frame), 0);
-                printf("[Cliente] ACK enviado para tipo=6,7,8 seq=%u\n", resposta.seq);
-
-                return 2;
-            } 
+            }
             else {
                 printf("[Cliente] Frame ignorado (tipo=%u, seq=%u)\n", resposta.tipo, resposta.seq);
                 continue;
@@ -115,35 +104,87 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
     }
 }
 
-//Funcao que faz o envio de mensagens
-void envia_mensagem(int sockfd, const char *interface, unsigned char seq, Frame f) {
+void cliente_recebe_arquivos(int sockfd) {
+    while (1) {
+        Frame resposta;
+        ssize_t n = recv(sockfd, &resposta, sizeof(resposta), 0);
 
+        if (n <= 0) break;
+
+        if (resposta.marcador != MARCADOR) continue;
+
+        unsigned char checksum_esperado = calcula_checksum(&resposta);
+        if (resposta.checksum != checksum_esperado) {
+            printf("[Cliente] Checksum inválido (esperado=%u, recebido=%u)\n", checksum_esperado, resposta.checksum);
+            
+            // Envia NACK
+            Frame nack;
+            monta_frame(&nack, resposta.seq, 1, NULL, 0); // tipo 1 = NACK
+            send(sockfd, &nack, sizeof(Frame), 0);
+            printf("[Cliente] NACK enviado para seq=%u\n", resposta.seq);
+            continue;
+        }
+
+        if (resposta.tipo >= 6 && resposta.tipo <= 8) {
+            printf("[Cliente] Arquivo recebido: %s\n", resposta.dados);
+
+            // Envia ACK de volta
+            Frame ack;
+            monta_frame(&ack, resposta.seq, 0, NULL, 0); // tipo 0 = ACK
+            send(sockfd, &ack, sizeof(Frame), 0);
+            printf("[Cliente] ACK enviado para tipo=%u seq=%u\n", resposta.tipo, resposta.seq);
+            break;
+        } 
+        else if (resposta.tipo == 15) { // sinal de fim de transmissão, opcional
+            printf("[Cliente] Fim da transmissão de arquivos\n");
+            break;
+        }
+        else {
+            printf("[Cliente] Tipo inesperado recebido (tipo=%u)\n", resposta.tipo);
+            break;
+        }
+    }
+}
+
+void envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam, int modo_servidor, struct sockaddr_ll* destino) {
     int timeout = TIMEOUT_MILLIS;
     int tentativas = 0;
     int ack = 0;
 
-    while (tentativas < MAX_RETRANSMISSIONS && !ack) {
+    Frame f;
+    monta_frame(&f, seq, tipo, dados, tam);
 
-        int bytes = send(sockfd, &f, sizeof(Frame), 0);
-        if (bytes < 0) 
-            perror("sendto");
-        else 
-            printf("[Cliente] Frame enviado (seq=%u)\n", seq);
+    while (tentativas < MAX_RETRANSMISSIONS && !ack) {
+        int bytes;
+        if (modo_servidor && destino != NULL) {
+            bytes = sendto(sockfd, &f, sizeof(Frame), 0, (struct sockaddr*)destino, sizeof(struct sockaddr_ll));
+        } else {
+            bytes = send(sockfd, &f, sizeof(Frame), 0);
+        }
+
+        if (bytes < 0) {
+            perror("send/sendto");
+        } else {
+            printf("[%s] Frame enviado (seq=%u, tipo=%u)\n", modo_servidor ? "Servidor" : "Cliente", seq, tipo);
+        }
 
         int resultado = espera_ack(sockfd, seq, timeout);
 
-        if (resultado == 1) //Caso o ack tenha chego com sucesso
+        if (resultado == 1) {
             ack = 1;
-        else if (resultado == 2) { //Caso ACK tenha chego com sucesso e encontrado um tesouro
+        } 
+        else if (resultado == 2 && !modo_servidor) {
             ack = 1;
-            resultado = espera_ack(sockfd, seq, timeout);
-        }
-        else { //timeout/NACK
+            // Cliente recebeu OK+ACK ou dados de arquivo, entra no modo passivo
+            cliente_recebe_arquivos(sockfd);
+        } 
+        else {
             tentativas++;
             timeout *= 2;
         }
     }
-    if (!ack) { //Caso num de tentativa tenha excedido o maximo
-        printf("[Cliente] Falha após %d tentativas\n", MAX_RETRANSMISSIONS);
+
+    if (!ack) {
+        printf("[%s] Falha após %d tentativas no seq=%u\n", modo_servidor ? "Servidor" : "Cliente", MAX_RETRANSMISSIONS, seq);
     }
 }

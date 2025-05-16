@@ -92,7 +92,8 @@ void escuta_mensagem(int sockfd, tes_t* tesouros) {
                         return;
                     }
                     else {
-                        int ack = 0;
+                        envia_mensagem(sockfd, f->seq, file_type + 6, file_name, strlen((char*)file_name), 1, &addr);
+                        /*int ack = 0;
                         int tentativas = 0;
                         int timeout = TIMEOUT_MILLIS;
                         while (tentativas < MAX_RETRANSMISSIONS && !ack) {
@@ -104,7 +105,7 @@ void escuta_mensagem(int sockfd, tes_t* tesouros) {
                                 tentativas++;
                                 timeout *= 2;
                             }
-                        }                       
+                        }*/                       
                     }
                 }
                 else

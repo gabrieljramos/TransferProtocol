@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
         switch(game_state) {
             case UP:
                 monta_frame(&f, seq, 11, NULL, 11);
-                envia_mensagem(sockfd, interface, seq, f);
+                envia_mensagem(sockfd, seq, 11, NULL, 0, 0, NULL);
                 update_x('-',&current_pos);
                 map[current_pos.x][current_pos.y] = '-';
                 print_map(map);
@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
                 break;
             case LEFT:
                 monta_frame(&f, seq, 13, NULL, 13);
-                envia_mensagem(sockfd, interface, seq, f);
+                envia_mensagem(sockfd, seq, 13, NULL, 0, 0, NULL);
                 update_y('-',&current_pos);
                 map[current_pos.x][current_pos.y] = '-';
                 print_map(map);
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
                 break;
             case DOWN:
                 monta_frame(&f, seq, 12, NULL, 12);
-                envia_mensagem(sockfd, interface, seq, f);
+                envia_mensagem(sockfd, seq, 12, NULL, 0, 0, NULL);
                 update_x('+',&current_pos);
                 map[current_pos.x][current_pos.y] = '-';
                 print_map(map);
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
                 break;
             case RIGHT:
                 monta_frame(&f, seq, 10, NULL, 10);
-                envia_mensagem(sockfd, interface, seq, f);
+                envia_mensagem(sockfd, seq, 10, NULL, 0, 0, NULL);
                 update_y('+',&current_pos);
                 map[current_pos.x][current_pos.y] = '-';
                 print_map(map);
