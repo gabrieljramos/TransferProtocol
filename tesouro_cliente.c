@@ -7,63 +7,50 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    //Salva a posicao atual
-    coord_t current_pos;
+    const char *interface = argv[1];
+    int sockfd = cria_raw_socket(interface);                                // Cria um raw_socket para a interface especificada
+
+    int seq = 0;                                                            // Inicializa a sequência de pacotes
+    int game_state = envia_mensagem(sockfd, seq, 14, NULL, 0, 0, NULL);     // Confirma se ha um jogo em andamento
+
+    seq = (seq + 1) % 32;                                                   // Incrementa a sequência de pacotes
+
+    coord_t current_pos;                                                    // Inicializa a posição inicial do jogador
     current_pos.x = 7;
     current_pos.y = 0;
 
-    //Salva a interface e inicia o socket
-    const char *interface = argv[1];
-    int sockfd = cria_raw_socket(interface);
-
-    //Inicializa a sequencia
-    int seq = 0;
-
-    //Cria e inicializa a matriz do mapa
     char map[8][8];
-    start_map(map);
+    start_map(map);                                                         // Inicializa o mapa do jogo
 
-    //Imprime o mapa
-    print_map(map);
+    print_map(map);                                                         // Imprime o mapa inicial
 
-    //Variavel para salvar o movimento escolhido
-    int game_state;
-
-    Frame f;
-    memset(&f, 0, sizeof(Frame));
-
-    //Loop principal do jogo
-    while (game_state != QUIT) {
+    while (game_state != QUIT) {                                            // Enquanto o jogo não for encerrado
         game_state = menu();
         switch(game_state) {
             case UP:
-                monta_frame(&f, seq, 11, NULL, 11);
-                envia_mensagem(sockfd, seq, 11, NULL, 0, 0, NULL);
-                update_x('-',&current_pos);
+                envia_mensagem(sockfd, seq, 11, NULL, 0, 0, NULL);          // Envia mensagem de movimento para cima
+                update_x('-',&current_pos);                                 // Atualiza a posição do jogador para cima
+                map[current_pos.x][current_pos.y] = '-';                    // Marca a nova posição no mapa
+                print_map(map);                                             // Imprime o mapa atualizado
+                seq = (seq + 1) % 32;                                       // Incrementa a sequência de pacotes
+                break;
+            case DOWN:
+                envia_mensagem(sockfd, seq, 12, NULL, 0, 0, NULL);          // Envia mensagem de movimento para baixo
+                update_x('+',&current_pos);                                 // Atualiza a posição do jogador para baixo
                 map[current_pos.x][current_pos.y] = '-';
                 print_map(map);
                 seq = (seq + 1) % 32;
                 break;
             case LEFT:
-                monta_frame(&f, seq, 13, NULL, 13);
-                envia_mensagem(sockfd, seq, 13, NULL, 0, 0, NULL);
-                update_y('-',&current_pos);
-                map[current_pos.x][current_pos.y] = '-';
-                print_map(map);
-                seq = (seq + 1) % 32;
-                break;
-            case DOWN:
-                monta_frame(&f, seq, 12, NULL, 12);
-                envia_mensagem(sockfd, seq, 12, NULL, 0, 0, NULL);
-                update_x('+',&current_pos);
+                envia_mensagem(sockfd, seq, 13, NULL, 0, 0, NULL);          // Envia mensagem de movimento para a esquerda
+                update_y('-',&current_pos);                                 // Atualiza a posição do jogador para a esquerda
                 map[current_pos.x][current_pos.y] = '-';
                 print_map(map);
                 seq = (seq + 1) % 32;
                 break;
             case RIGHT:
-                monta_frame(&f, seq, 10, NULL, 10);
-                envia_mensagem(sockfd, seq, 10, NULL, 0, 0, NULL);
-                update_y('+',&current_pos);
+                envia_mensagem(sockfd, seq, 10, NULL, 0, 0, NULL);          // Envia mensagem de movimento para a direita
+                update_y('+',&current_pos);                                 // Atualiza a posição do jogador para a direita
                 map[current_pos.x][current_pos.y] = '-';
                 print_map(map);
                 seq = (seq + 1) % 32;
@@ -76,7 +63,7 @@ int main(int argc, char* argv[]) {
         }
     }
     
-    close(sockfd);
+    close(sockfd);                                                          // Fecha o socket
     return 0;
 }
 

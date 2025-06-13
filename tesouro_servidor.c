@@ -7,27 +7,23 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    //Aloca um vetor p/ tesouros e inicia o jogo
-    tes_t* tesouros = (tes_t*) malloc(sizeof(tes_t) * 8);
-    tesouros = game_start();
+    tes_t* tesouros = (tes_t*) malloc(sizeof(tes_t) * 8);                   // Aloca memória para 8 tesouros
+    tesouros = game_start();                                                // Inicia o jogo e obtém a lista de tesouros
 
     //Imprime lista de tesouros (para teste apenas)
     printf("Tesouros:\n");
     for (int i = 0; i < 8; i++) {
         printf("(%d,%d)\n", tesouros[i].pos.x,tesouros[i].pos.y);
     }
-    coord_t current_pos;
-    //Salva a posicao inicial
+
+    coord_t current_pos;                                                    // Inicializa a posição inicial do jogador                                  
     current_pos.x = 7;
     current_pos.y = 0;
 
-    //Salva a interface e inicia o socket
     const char* interface = argv[1];
-    int sockfd = cria_raw_socket(interface);
+    int sockfd = cria_raw_socket(interface);                                // Cria um raw_socket para a interface especificada
 
-    //Comeca a esperar por msgs
-    //escuta_mensagem(sockfd,tesouros);
-    escuta_mensagem(sockfd, 1, tesouros, &current_pos, NULL);
-    close(sockfd);
+    escuta_mensagem(sockfd, 1, tesouros, &current_pos, NULL);               // Escuta mensagens do cliente
+    close(sockfd);                                                          // Fecha o socket
     return 0;
 }

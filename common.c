@@ -1,5 +1,9 @@
 #include "common.h"
+
 unsigned char *extensoes[] = {".txt", ".mp4", ".jpeg"};
+
+int steps_taken = 0;
+
 long long timestamp() {
     struct timeval tp;
     gettimeofday(&tp, NULL);
@@ -124,6 +128,10 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
                     printf("[Servidor] Espaco insuficiente para o arquivo\n");
                     return 3;
                 }
+                else if (strcmp((char*)resposta.dados, "3") == 0) {
+                    printf("[Servidor] Jogo ja iniciado, reiniciando...\n");
+                    return 4;
+                }
             }
             else {
                 printf("[Cliente] Frame ignorado (tipo=%u, seq=%u)\n", resposta.tipo, resposta.seq);
@@ -168,8 +176,11 @@ int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned c
             ack = 1;
             // Cliente recebeu OK+ACK ou dados de arquivo, entra no modo passivo
             escuta_mensagem(sockfd, 0, NULL, NULL, NULL);
-        } else if(resultado == 3){
+        } else if(resultado == 3) {
             return -1;
+        }
+        else if (resultado == 4) {
+            return 5;
         }
         else {
             tentativas++;
@@ -192,30 +203,42 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
         struct sockaddr_ll addr;
         socklen_t addrlen = sizeof(addr);
         ssize_t bytes = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&addr, &addrlen);
-        if (bytes < 5) continue;
+        if (bytes < 5) continue;                                                            // Verifica se o tamanho mínimo do frame é atendido
 
-        for (ssize_t i = 0; i < bytes - 4;) {
-            if (buffer[i] == MARCADOR) {
+        for (ssize_t i = 0; i < bytes - 4;) {                                               // Percorre o buffer procurando por frames válidos
+            if (buffer[i] == MARCADOR) {                                                    // Verifica se o marcador é válido
                 Frame *f = (Frame *)&buffer[i];
                 unsigned char esperado = calcula_checksum(f);
 
-                if (f->checksum != esperado) {
+                if (f->checksum != esperado) {                                              // Verifica se o checksum é válido
                     printf("[%s] Checksum inválido seq=%u\n", modo_servidor ? "Servidor" : "Cliente", f->seq);
 
                     Frame nack;
-                    monta_frame(&nack, f->seq, 1, NULL, 0); // tipo 1 = NACK
+                    monta_frame(&nack, f->seq, 1, NULL, 0);                                 // tipo 1 = NACK
                     send(sockfd, &nack, sizeof(Frame), 0);
                     i += sizeof(Frame);
                     continue;
                 }
 
-                unsigned char tipo = f->tipo & 0x0F;
+                unsigned char tipo = f->tipo & 0x0F;                                        // Extrai o tipo do frame
 
                 if (modo_servidor) {
-                    // Ignora frames de controle
-                    if (tipo == 0 || tipo == 1 || tipo == 2) {
+                    if (tipo == 0 || tipo == 1 || tipo == 2) {                              // Ignora ACK, NACK ou OK+ACK
                         i += sizeof(Frame);
                         continue;
+                    }
+
+                    if (tipo == 14) {                                                       // Tipo 14 = Jogo em andamento
+                        if (steps_taken > 0) {                                              // Se já houver passos dados, não permite iniciar o jogo
+                            printf("[Servidor] Jogo ja iniciado, reiniciando...\n");
+                            unsigned char error_code[2] = {'3', '\0'};
+                            envia_resposta(sockfd, f->seq, 15, &addr, error_code);          // ERRO TIPO 3
+                            return;
+                        }
+                        else {                                                              // Se não houver passos dados, inicia o jogo
+                            printf("[Servidor] Jogo iniciado\n");
+                            envia_resposta(sockfd, f->seq, 0, &addr, NULL); // ACK
+                        }
                     }
 
                     // Processa movimento
@@ -224,20 +247,21 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     else if (tipo == 13) update_y('-', current_pos);
                     else if (tipo == 10) update_y('+', current_pos);
 
-                    move_t *mv = malloc(sizeof(move_t));
-                    mv->pos = *current_pos;
+                    move_t *mv = malloc(sizeof(move_t));                                    // Aloca memória para o movimento
+                    mv->pos = *current_pos;                         
                     mv->next = mv->prev = NULL;
-                    add_move(mv);
+                    add_move(mv);                                                           // Adiciona o movimento à lista de movimentos
                     printf("[Servidor] Posição (%d, %d) salva\n", mv->pos.x, mv->pos.y);
+                    steps_taken++;
 
-                    int tesouro = treasure_found(tesouros, current_pos->x, current_pos->y);
+                    int tesouro = treasure_found(tesouros, current_pos->x, current_pos->y); // Verifica se um tesouro foi encontrado
                     if (tesouro >= 0) {
-                        envia_resposta(sockfd, f->seq, 2, &addr, NULL); // OK+ACK
+                        envia_resposta(sockfd, f->seq, 2, &addr, NULL);                     // OK+ACK
                         unsigned char nome[64];
-                        int tipo_arq = find_file(tesouros[tesouro].id, nome);
-                        if (tipo_arq >= 0) {
+                        int tipo_arq = find_file(tesouros[tesouro].id, nome);               // Busca o arquivo correspondente ao tesouro encontrado
+                        if (tipo_arq >= 0) {                                                // Se o arquivo foi encontrado
                             struct stat filestat;
-                            if (stat((char*)nome, &filestat) != 0) {
+                            if (stat((char*)nome, &filestat) != 0) {                        // Obtém informações do arquivo
                                 perror("[Servidor] Erro ao obter informações do arquivo");
                                 return;
                             }
@@ -248,18 +272,18 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
 
                             int authorized = envia_mensagem(sockfd, f->seq, 4, (unsigned char*)tamanho_str, strlen(tamanho_str), 1, &addr);
 
-                            if (authorized) {
+                            if (authorized) {                                               // Se o cliente autorizou o recebimento do arquivo       
                                 printf("[Servidor] Enviando nome arquivo %s\n", nome);
                                 envia_mensagem(sockfd, f->seq, tipo_arq + 6, nome, strlen((char*)nome), 1, &addr);
                             }
 
                         }
-                        else {
+                        else {                                                              // Se o arquivo não foi encontrado
                             printf("[Servidor] Arquivo não encontrado para o tesouro %d\n", tesouros[tesouro].id);
                             unsigned char error_code[2] = {'2', '\0'};
                             envia_resposta(sockfd, f->seq, 15, &addr, error_code);
                         }
-                    } else {
+                    } else {                                                                // Se não foi encontrado nenhum tesouro
                         envia_resposta(sockfd, f->seq, 0, &addr, NULL); // ACK
                     }
 
