@@ -93,10 +93,22 @@ void start_map(char map[8][8]) {
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
             if ((i == 7) && (j == 0))
-                map[i][j] = '-';
+                map[i][j] = '*';
             else
                 map[i][j] = 'X';
         }
+    }
+
+}
+
+void update_map(char map[8][8], coord_t pos, int treasure_id) {
+
+    //Atualiza a matriz do mapa com a posicao atual do jogador
+    map[pos.y][pos.x] = 'O';
+
+    //Se um tesouro foi encontrado, atualiza o mapa com o id do tesouro
+    if (treasure_id != -1) {
+        map[pos.y][pos.x] = '0' + treasure_id;
     }
 
 }

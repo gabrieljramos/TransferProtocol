@@ -1,5 +1,27 @@
 #include "common.h"
 
+
+void make_move(char map[8][8], int sockfd, int seq, coord_t *current_pos, int direction) {
+
+    envia_mensagem(sockfd, seq, direction, NULL, 0, 0, NULL);               // Envia a mensagem de movimento para o servidor
+
+    map[current_pos->x][current_pos->y] = '0';                              // Posicao anterior eh 0
+    
+    if (direction == 11) {                                                  // Se a direção for para cima
+        update_x('-', current_pos);
+    } else if (direction == 12) {                                           // Se a direção for para baixo
+        update_x('+', current_pos);
+    } else if (direction == 13) {                                           // Se a direção for para a esquerda
+        update_y('-', current_pos);
+    } else if (direction == 10) {                                           // Se a direção for para a direita
+        update_y('+', current_pos);
+    }
+
+    map[current_pos->x][current_pos->y] = '*';                              // Posicao atual eh *
+    print_map(map);  
+
+}
+
 int main(int argc, char* argv[]) {
 
     if (argc < 2) {
@@ -27,35 +49,25 @@ int main(int argc, char* argv[]) {
     while (game_state != QUIT) {                                            // Enquanto o jogo não for encerrado
         game_state = menu();
         switch(game_state) {
-            case UP:
-                envia_mensagem(sockfd, seq, 11, NULL, 0, 0, NULL);          // Envia mensagem de movimento para cima
-                update_x('-',&current_pos);                                 // Atualiza a posição do jogador para cima
-                map[current_pos.x][current_pos.y] = '-';                    // Marca a nova posição no mapa
-                print_map(map);                                             // Imprime o mapa atualizado
-                seq = (seq + 1) % 32;                                       // Incrementa a sequência de pacotes
+            case UP:                                     
+                make_move(map, sockfd, seq, &current_pos, 11);              // Chama a função para fazer o movimento
+                seq = (seq + 1) % 32;
                 break;
             case DOWN:
-                envia_mensagem(sockfd, seq, 12, NULL, 0, 0, NULL);          // Envia mensagem de movimento para baixo
-                update_x('+',&current_pos);                                 // Atualiza a posição do jogador para baixo
-                map[current_pos.x][current_pos.y] = '-';
-                print_map(map);
+                make_move(map, sockfd, seq, &current_pos, 12);
                 seq = (seq + 1) % 32;
                 break;
             case LEFT:
-                envia_mensagem(sockfd, seq, 13, NULL, 0, 0, NULL);          // Envia mensagem de movimento para a esquerda
-                update_y('-',&current_pos);                                 // Atualiza a posição do jogador para a esquerda
-                map[current_pos.x][current_pos.y] = '-';
-                print_map(map);
+                make_move(map, sockfd, seq, &current_pos, 13);
                 seq = (seq + 1) % 32;
                 break;
             case RIGHT:
-                envia_mensagem(sockfd, seq, 10, NULL, 0, 0, NULL);          // Envia mensagem de movimento para a direita
-                update_y('+',&current_pos);                                 // Atualiza a posição do jogador para a direita
-                map[current_pos.x][current_pos.y] = '-';
-                print_map(map);
+                make_move(map, sockfd, seq, &current_pos, 10);                         
                 seq = (seq + 1) % 32;
                 break;
             case QUIT:
+                envia_mensagem(sockfd, seq, 3, NULL, 0, 0, NULL);           // Envia mensagem de encerramento do jogo
+                printf("Jogo encerrado.\n");
                 break;
             default:
                 printf("Digite uma opção válida (1..5)\n");

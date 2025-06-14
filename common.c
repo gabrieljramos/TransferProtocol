@@ -228,6 +228,12 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                         continue;
                     }
 
+                    if (tipo == 3) {                                                       // Tipo 3 = Jogo encerrado
+                        printf("[Servidor] Jogo encerrado\n");
+                        envia_resposta(sockfd, f->seq, 0, &addr, NULL);
+                        return;
+                    }
+
                     if (tipo == 14) {                                                       // Tipo 14 = Jogo em andamento
                         if (steps_taken > 0) {                                              // Se já houver passos dados, não permite iniciar o jogo
                             printf("[Servidor] Jogo ja iniciado, reiniciando...\n");
