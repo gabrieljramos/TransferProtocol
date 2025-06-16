@@ -82,15 +82,17 @@ void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char 
     f->checksum = calcula_checksum(f);
 }
 
-int find_file(int file_num, unsigned char *file_name) {
+int find_file(int file_num, unsigned char *file_name, size_t name_size, unsigned char *file_path, size_t path_size) {
 
     for (int i = 0; i < 3; i++) {
-        snprintf(file_name, sizeof(file_name), "%d%s", file_num, extensoes[i]);
-        FILE *fp = fopen(file_name, "rb");
+        snprintf(file_name, name_size, "%d", file_num);                                                 // Converte o número do arquivo para string
+        snprintf(file_path, path_size, "./objetos/%s%s", file_name, extensoes[i]);                      // Concatena o caminho do arquivo com a extensão correspondente
+        FILE *fp = fopen(file_path, "rb");
+
         if (fp) {
-            printf("Arquivo encontrado: %sTamanho: %ld\n", file_name, strlen(file_name));
+            printf("Arquivo encontrado: %s Tamanho(nome): %ld\n", file_name, strlen(file_name));
             fclose(fp);
-            return i;
+            return i;                                                                                   // Retorna o índice da extensão encontrada                                      
         }
     }
     return -1;
@@ -123,12 +125,12 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
             } else if (resposta.tipo == 2 && resposta.seq == seq_esperado) { // OK + ACK
                 printf("[Cliente] Tesouro recebido para seq=%u\n", seq_esperado);
                 return 2;
-            } else if (resposta.tipo == 15 && resposta.seq == seq_esperado) { // OK + ACK
-                if (strcmp((char*)resposta.dados, "1") == 0) {
+            } else if (resposta.tipo == 15 && resposta.seq == seq_esperado) { // ERRO
+                if (strcmp((char*)resposta.dados, "1") == 0) {              // Erro de espaço insuficiente
                     printf("[Servidor] Espaco insuficiente para o arquivo\n");
                     return 3;
                 }
-                else if (strcmp((char*)resposta.dados, "3") == 0) {
+                else if (strcmp((char*)resposta.dados, "3") == 0) {         // Erro de jogo já iniciado
                     printf("[Servidor] Jogo ja iniciado, reiniciando...\n");
                     return 4;
                 }
@@ -174,8 +176,7 @@ int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned c
         } 
         else if (resultado == 2 && !modo_servidor) {
             ack = 1;
-            // Cliente recebeu OK+ACK ou dados de arquivo, entra no modo passivo
-            escuta_mensagem(sockfd, 0, NULL, NULL, NULL);
+            escuta_mensagem(sockfd, 0, NULL, NULL, NULL); // Escuta a mensagem de tesouro recebida
         } else if(resultado == 3) {
             return -1;
         }
@@ -264,10 +265,11 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     if (tesouro >= 0) {
                         envia_resposta(sockfd, f->seq, 2, &addr, NULL);                     // OK+ACK
                         unsigned char nome[64];
-                        int tipo_arq = find_file(tesouros[tesouro].id, nome);               // Busca o arquivo correspondente ao tesouro encontrado
-                        if (tipo_arq >= 0) {                                                // Se o arquivo foi encontrado
+                        unsigned char file_path[90];
+                        int tipo_arq = find_file(tesouros[tesouro].id, nome, sizeof(nome), file_path, sizeof(file_path));
+                        if (tipo_arq >= 0) {                                                                                    // Se o arquivo foi encontrado
                             struct stat filestat;
-                            if (stat((char*)nome, &filestat) != 0) {                        // Obtém informações do arquivo
+                            if (stat((char*)file_path, &filestat) != 0) {                                                       // Obtém informações do arquivo
                                 perror("[Servidor] Erro ao obter informações do arquivo");
                                 return;
                             }
@@ -297,6 +299,9 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     // Modo cliente, só aceita tipos 6–8
                     if (tipo >= 6 && tipo <= 8) {
                         printf("[Cliente] Arquivo recebido: %s\n", f->dados);
+                        unsigned char file_name[140];
+                        snprintf(file_name, sizeof(file_name), "%s%s", f->dados, extensoes[tipo - 6]); // Concatena o nome do arquivo com a extensão
+                        printf("[Cliente] Nome do arquivo: %s\n", file_name);
                         envia_resposta(sockfd, f->seq, 0, cliente_addr, NULL); // ACK
                         return;
                     } else if (tipo == 4) {
