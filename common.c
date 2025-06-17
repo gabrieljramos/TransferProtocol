@@ -1,8 +1,9 @@
 #include "common.h"
 
-unsigned char *extensoes[] = {".txt", ".mp4", ".jpeg"};
+unsigned char *extensoes[] = {".txt", ".mp4", ".jpg"};
 
 int steps_taken = 0;
+int treasures_found = 0;
 
 long long timestamp() {
     struct timeval tp;
@@ -98,6 +99,84 @@ int find_file(int file_num, unsigned char *file_name, size_t name_size, unsigned
     return -1;
 }
 
+int servidor_envia_arquivo(int sockfd, unsigned char seq, const char* file_path, struct sockaddr_ll* destino) {
+
+    FILE *fp = fopen(file_path, "rb");                                                                  // Abre o arquivo a ser enviado
+    if (!fp) {
+        perror("[Servidor] Falha ao abrir arquivo de envio\n");
+        return -1;
+    }
+
+    printf("[Servidor] Iniciando envio de: %s\n", file_path);
+    unsigned char chunk_buffer[127];
+    size_t bytes_read;
+
+    while ((bytes_read = fread(chunk_buffer, 1, sizeof(chunk_buffer), fp)) > 0) {                       // Lê o arquivo em pedaços de 127 bytes
+  
+        if (!envia_mensagem(sockfd, seq, 5, chunk_buffer, bytes_read, 1, destino)) {                    // Envia o pedaço do arquivo
+            printf("[Servidor] Falha ao receber ACK para o pedaço do arquivo seq=%u. Abortando.\n", seq);
+            fclose(fp);
+            return -1;
+        }
+        seq = (seq + 1) % 32;                                                                           // Incrementa o número de sequência para o próximo pedaço
+    }
+
+    printf("[Servidor] Enviando EOF.\n");
+    envia_mensagem(sockfd, seq, 9, NULL, 0, 1, destino);
+    
+    seq = (seq + 1) % 32;                                                                               // Incrementa o número de sequência para o EOF
+    fclose(fp);
+    return seq;                                                                                         // Retorna o próximo número de sequência disponível
+
+}
+
+int cliente_recebe_arquivo(int sockfd, const char* file_name, unsigned char seq) {
+
+    FILE *fp = fopen(file_name, "wb");                                                                  // Abre o arquivo para escrita
+    if (!fp) {
+        perror("[Cliente] Falha ao criar arquivo para recebimento");
+        return 0;
+    }
+
+    printf("[Cliente] Pronto para receber dados do arquivo: %s. Esperando seq=%u\n", file_name, seq);
+    Frame f;
+
+    // Define um tempo limite para receber quadros
+    struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 }; // 10 segundos de tempo limite     
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+
+    while (1) {
+        ssize_t n = recv(sockfd, &f, sizeof(f), 0);
+
+        if (n < 5 || f.marcador != MARCADOR) {                                                          // Verifica se o tamanho mínimo do frame é atendido e se o marcador é válido
+            continue;
+        }
+
+        if (f.seq != seq) {                                                                             // Verifica se o número de sequência é o esperado
+            printf("[Cliente] Frame com sequencia incorreta (recebeu %u, esperado %u)\n", f.seq, seq);
+            continue;
+        }
+
+        if (f.tipo == 5) {                                                                              // Tipo 5 = Dados do arquivo
+            fwrite(f.dados, 1, f.tamanho, fp);                                                          // Escreve os dados recebidos no arquivo
+            envia_resposta(sockfd, seq, 0, NULL, NULL);                                                 // Envia ACK
+            printf("[Cliente] Bloco recebido seq=%u, tam=%u. ACK Enviado.\n", seq, f.tamanho);
+            seq = (seq + 1) % 32;                                                                       // Incrementa para esperar a próxima sequência            
+        } else if (f.tipo == 9) {                                                                       // EOF
+            envia_resposta(sockfd, seq, 0, NULL, NULL);                                                 // Envia ACK para o quadro final
+            printf("[Cliente] Recebido marcador de Fim de Arquivo seq=%u. Transferencia completa.\n", seq);
+            break;
+        }
+    }
+
+    fclose(fp);
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+    return 1;
+    
+}
+
 int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
    
     Frame resposta;
@@ -171,12 +250,14 @@ int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned c
         int resultado = espera_ack(sockfd, seq, timeout);
 
         if (resultado == 1) {
-            ack = 1;
             return 1;
-        } 
-        else if (resultado == 2 && !modo_servidor) {
-            ack = 1;
+        } else if (resultado == -1) {
+            printf("[%s] NACK recebido para seq=%u, retransmitindo...\n", modo_servidor ? "Servidor" : "Cliente", seq);
+            tentativas++;
+        }
+        else if (resultado == 2) {
             escuta_mensagem(sockfd, 0, NULL, NULL, NULL); // Escuta a mensagem de tesouro recebida
+            return 2;
         } else if(resultado == 3) {
             return -1;
         }
@@ -264,6 +345,7 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     int tesouro = treasure_found(tesouros, current_pos->x, current_pos->y); // Verifica se um tesouro foi encontrado
                     if (tesouro >= 0) {
                         envia_resposta(sockfd, f->seq, 2, &addr, NULL);                     // OK+ACK
+                        treasures_found++;
                         unsigned char nome[64];
                         unsigned char file_path[90];
                         int tipo_arq = find_file(tesouros[tesouro].id, nome, sizeof(nome), file_path, sizeof(file_path));
@@ -281,8 +363,19 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                             int authorized = envia_mensagem(sockfd, f->seq, 4, (unsigned char*)tamanho_str, strlen(tamanho_str), 1, &addr);
 
                             if (authorized) {                                               // Se o cliente autorizou o recebimento do arquivo       
-                                printf("[Servidor] Enviando nome arquivo %s\n", nome);
-                                envia_mensagem(sockfd, f->seq, tipo_arq + 6, nome, strlen((char*)nome), 1, &addr);
+                                unsigned char next_seq = (f->seq + 1) % 32;
+                                printf("[Servidor] Enviando arquivo %s com extensão %s\n", nome, extensoes[tipo_arq]);
+                                int name_sent = envia_mensagem(sockfd, next_seq, tipo_arq + 6, nome, strlen((char*)nome), 1, &addr);
+
+                                if (name_sent) {
+                                    next_seq = (next_seq + 1) % 32;
+                                    servidor_envia_arquivo(sockfd, next_seq, (char*)file_path, &addr);
+                                }
+                            }
+
+                            if (treasures_found >= 8) {                                          // Se todos os tesouros foram encontrados
+                                printf("[Servidor] Todos os tesouros encontrados! Jogo encerrado.\n");
+                                return;
                             }
 
                         }
@@ -296,14 +389,19 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     }
 
                 } else {
-                    // Modo cliente, só aceita tipos 6–8
                     if (tipo >= 6 && tipo <= 8) {
-                        printf("[Cliente] Arquivo recebido: %s\n", f->dados);
+
                         unsigned char file_name[140];
-                        snprintf(file_name, sizeof(file_name), "%s%s", f->dados, extensoes[tipo - 6]); // Concatena o nome do arquivo com a extensão
-                        printf("[Cliente] Nome do arquivo: %s\n", file_name);
-                        envia_resposta(sockfd, f->seq, 0, cliente_addr, NULL); // ACK
-                        return;
+                        snprintf((char*)file_name, sizeof(file_name), "%s%s", (char*)f->dados, (char*)extensoes[tipo - 6]);
+                        printf("[Cliente] Nome do arquivo recebido: %s\n", file_name);
+
+                        envia_resposta(sockfd, f->seq, 0, NULL, NULL);
+
+                        unsigned char next_seq = (f->seq + 1) % 32;
+                        if (cliente_recebe_arquivo(sockfd, (char*)file_name, next_seq)) {
+                            return;                                                                     // Arquivo recebido com sucesso
+                        }
+
                     } else if (tipo == 4) {
                         printf("[Cliente] Tamanho do arquivo recebido: %s bytes\n", f->dados);
                         long file_size = strtol((char*)f->dados, NULL, 10);
@@ -326,12 +424,6 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                             envia_resposta(sockfd, f->seq, 15, cliente_addr, error_code); // tipo 15 = erro
                         }
                         //return;
-                    } else if (tipo == 5) {
-                        printf("[Cliente] Arquivo recebido: %s\n", f->dados);
-                        Frame ack;
-                        monta_frame(&ack, f->seq, 0, NULL, 0); // ACK
-                        send(sockfd, &ack, sizeof(Frame), 0);
-                        return;
                     } else if (tipo == 14) {
                         printf("Arquivo não encontrado\n");
                         return;

@@ -1,12 +1,17 @@
 #include "common.h"
 
+int tesouros_encontrados = 0;                                                // Variável global para contar os tesouros encontrados
 
 void make_move(char map[8][8], int sockfd, int seq, coord_t *current_pos, int direction) {
 
-    envia_mensagem(sockfd, seq, direction, NULL, 0, 0, NULL);               // Envia a mensagem de movimento para o servidor
+    int result = envia_mensagem(sockfd, seq, direction, NULL, 0, 0, NULL);  // Envia a mensagem de movimento para o servidor
 
-    map[current_pos->x][current_pos->y] = '0';                              // Posicao anterior eh 0
-    
+    if (map[current_pos->x][current_pos->y] == '#') {
+        map[current_pos->x][current_pos->y] = 'T';                          // Marca a posição atual com T se for um tesouro
+    }
+    else if (map[current_pos->x][current_pos->y] == '*')
+        map[current_pos->x][current_pos->y] = '0';                          // Posicao anterior eh 0
+
     if (direction == 11) {                                                  // Se a direção for para cima
         update_x('-', current_pos);
     } else if (direction == 12) {                                           // Se a direção for para baixo
@@ -17,7 +22,18 @@ void make_move(char map[8][8], int sockfd, int seq, coord_t *current_pos, int di
         update_y('+', current_pos);
     }
 
-    map[current_pos->x][current_pos->y] = '*';                              // Posicao atual eh *
+    if (result == 2) {
+        tesouros_encontrados++;
+        map[current_pos->x][current_pos->y] = '#';                          // Se um tesouro foi encontrado, marca a posição atual com #
+    }
+    else {
+        if (map[current_pos->x][current_pos->y] == 'T') {
+            map[current_pos->x][current_pos->y] = '#';
+        } 
+        else {
+            map[current_pos->x][current_pos->y] = '*';
+        }
+    }
     print_map(map);  
 
 }
@@ -47,6 +63,12 @@ int main(int argc, char* argv[]) {
     print_map(map);                                                         // Imprime o mapa inicial
 
     while (game_state != QUIT) {                                            // Enquanto o jogo não for encerrado
+
+        if (tesouros_encontrados >= 8) {                                         // Se todos os tesouros foram encontrados
+            printf("Todos os tesouros foram encontrados! Jogo encerrado.\n");
+            break;
+        }
+
         game_state = menu();
         switch(game_state) {
             case UP:                                     

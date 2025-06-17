@@ -13,6 +13,7 @@ typedef struct coordenadas {
 
 typedef struct tesouro {
     int id;
+    int encontrado;
     coord_t pos;
 } tes_t;
 

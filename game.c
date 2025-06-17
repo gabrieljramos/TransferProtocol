@@ -27,6 +27,7 @@ tes_t* game_start() {
     tes_t* tesouros = (tes_t*) malloc(sizeof(tes_t)*treasure_amount);
     for (int i = 0; i < treasure_amount; i++) {
         tesouros[i].id = i+1;
+        tesouros[i].encontrado = 0;                                 // Inicializa como não encontrado
         tesouros[i].pos.x = rand() % 8;
         tesouros[i].pos.y = rand() % 8;
     }
@@ -52,8 +53,10 @@ int get_game_x(int x) {
 int treasure_found(tes_t *treasures, int x, int y) {
 
     for (int i = 0; i < 8; i++) {
-        if (treasures[i].pos.x == x && treasures[i].pos.y == y)
+        if (treasures[i].pos.x == x && treasures[i].pos.y == y && treasures[i].encontrado == 0) {
+            treasures[i].encontrado = 1; // Marca o tesouro como encontrado
             return i;
+        }
     }
     return -1;
 
