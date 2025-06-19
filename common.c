@@ -1,5 +1,8 @@
 #include "common.h"
 
+#define FRAME_HEADER_SIZE (sizeof(Frame) - 127)
+#define MIN_ETH_PAYLOAD_SIZE 14
+
 unsigned char *extensoes[] = {".txt", ".mp4", ".jpg"};
 
 int steps_taken = 0;
@@ -51,7 +54,27 @@ void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct so
     else
         monta_frame(&resposta, seq, tipo, msg, strlen((char*)msg));
 
-    send(sockfd, &resposta, sizeof(resposta), 0);
+    size_t bytes_to_send = FRAME_HEADER_SIZE + resposta.tamanho;
+    int bytes_sent;
+
+    if (bytes_to_send < MIN_ETH_PAYLOAD_SIZE) {   // Se o tamanho do frame for menor que o mínimo, preenche com zeros
+        unsigned char padded_buffer[MIN_ETH_PAYLOAD_SIZE] = {0};
+        memcpy(padded_buffer, &resposta, bytes_to_send);
+        if (origem != NULL) {
+            bytes_sent = sendto(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0, (struct sockaddr*)origem, sizeof(struct sockaddr_ll));
+        } else {
+            bytes_sent = send(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0);
+        }
+    } else {            // Se o tamanho do frame for maior ou igual ao mínimo, envia normalmente
+        if (origem != NULL) {
+            bytes_sent = sendto(sockfd, &resposta, bytes_to_send, 0, (struct sockaddr*)origem, sizeof(struct sockaddr_ll));
+        } else {
+            bytes_sent = send(sockfd, &resposta, bytes_to_send, 0);
+        }
+    }
+
+    send(sockfd, &resposta, bytes_to_send, 0);
+
 }
 
 //Faz a soma de todos os campos necessarios e retorna seu valor
@@ -235,10 +258,14 @@ int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned c
 
     while (tentativas < MAX_RETRANSMISSIONS && !ack) {
         int bytes;
-        if (modo_servidor && destino != NULL) {
-            bytes = sendto(sockfd, &f, sizeof(Frame), 0, (struct sockaddr*)destino, sizeof(struct sockaddr_ll));
-        } else {
-            bytes = send(sockfd, &f, sizeof(Frame), 0);
+        size_t bytes_to_send = FRAME_HEADER_SIZE + f.tamanho;
+
+        if (bytes_to_send < MIN_ETH_PAYLOAD_SIZE) {         // Se o tamanho do frame for menor que o mínimo, preenche com zeros
+            unsigned char padded_buffer[MIN_ETH_PAYLOAD_SIZE] = {0};
+            memcpy(padded_buffer, &f, bytes_to_send);
+            bytes = sendto(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0, (struct sockaddr*)destino, sizeof(struct sockaddr_ll));
+        } else {                                            // Se o tamanho do frame for maior ou igual ao mínimo, envia normalmente
+            bytes = sendto(sockfd, &f, bytes_to_send, 0, (struct sockaddr*)destino, sizeof(struct sockaddr_ll));
         }
 
         if (bytes < 0) {
@@ -294,10 +321,7 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
 
                 if (f->checksum != esperado) {                                              // Verifica se o checksum é válido
                     printf("[%s] Checksum inválido seq=%u\n", modo_servidor ? "Servidor" : "Cliente", f->seq);
-
-                    Frame nack;
-                    monta_frame(&nack, f->seq, 1, NULL, 0);                                 // tipo 1 = NACK
-                    send(sockfd, &nack, sizeof(Frame), 0);
+                    envia_resposta(sockfd, f->seq, 1, &addr, NULL); // Envia NACK
                     i += sizeof(Frame);
                     continue;
                 }
