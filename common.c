@@ -155,7 +155,7 @@ int servidor_envia_arquivo(int sockfd, unsigned char seq, const char* file_path,
 
 int cliente_recebe_arquivo(int sockfd, const char* file_name, unsigned char seq) {
 
-    FILE *fp = fopen(file_name, "wb");                                                                  // Abre o arquivo para escrita
+    FILE *fp = fopen(file_name, "wb");
     if (!fp) {
         perror("[Cliente] Falha ao criar arquivo para recebimento");
         return 0;
@@ -163,41 +163,67 @@ int cliente_recebe_arquivo(int sockfd, const char* file_name, unsigned char seq)
 
     printf("[Cliente] Pronto para receber dados do arquivo: %s. Esperando seq=%u\n", file_name, seq);
     Frame f;
+    int success = 0; 
 
-    // Define um tempo limite para receber quadros
-    struct timeval timeout = { .tv_sec = 10, .tv_usec = 0 }; // 10 segundos de tempo limite     
-    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+    struct timeval sock_timeout = { .tv_sec = 1, .tv_usec = 0 };
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&sock_timeout, sizeof(sock_timeout));
 
     while (1) {
-        ssize_t n = recv(sockfd, &f, sizeof(f), 0);
+        long long inicio = timestamp();
+        int chunk_received = 0;
 
-        if (n < 5 || f.marcador != MARCADOR) {                                                          // Verifica se o tamanho mínimo do frame é atendido e se o marcador é válido
-            continue;
+
+        while (timestamp() - inicio <= TIMEOUT_MILLIS) { 
+            ssize_t n = recv(sockfd, &f, sizeof(f), 0);
+
+            if (n < 0) { 
+                continue;
+            }
+
+            if (n < 5 || f.marcador != MARCADOR) {
+                continue;
+            }
+            
+            if (f.seq == seq) {
+                if (f.tipo == 5) { // Data chunk
+                    fwrite(f.dados, 1, f.tamanho, fp);
+                    envia_resposta(sockfd, seq, 0, NULL, NULL);
+                    printf("[Cliente] Bloco recebido seq=%u, tam=%u. ACK Enviado.\n", seq, f.tamanho);
+                    seq = (seq + 1) % 32;
+                    chunk_received = 1;
+                    break; 
+                } else if (f.tipo == 9) { 
+                    envia_resposta(sockfd, seq, 0, NULL, NULL);
+                    printf("[Cliente] Recebido marcador de Fim de Arquivo seq=%u. Transferencia completa.\n", seq);
+                    chunk_received = 1;
+                    success = 1; 
+                    break;
+                }
+            }
+        } 
+
+        if (!chunk_received) {
+            printf("[Cliente] Timeout esperando pelo bloco de arquivo com seq=%u. Abortando.\n", seq);
+            success = 0;
+            break;
         }
 
-        if (f.seq != seq) {                                                                             // Verifica se o número de sequência é o esperado
-            printf("[Cliente] Frame com sequencia incorreta (recebeu %u, esperado %u)\n", f.seq, seq);
-            continue;
-        }
-
-        if (f.tipo == 5) {                                                                              // Tipo 5 = Dados do arquivo
-            fwrite(f.dados, 1, f.tamanho, fp);                                                          // Escreve os dados recebidos no arquivo
-            envia_resposta(sockfd, seq, 0, NULL, NULL);                                                 // Envia ACK
-            printf("[Cliente] Bloco recebido seq=%u, tam=%u. ACK Enviado.\n", seq, f.tamanho);
-            seq = (seq + 1) % 32;                                                                       // Incrementa para esperar a próxima sequência            
-        } else if (f.tipo == 9) {                                                                       // EOF
-            envia_resposta(sockfd, seq, 0, NULL, NULL);                                                 // Envia ACK para o quadro final
-            printf("[Cliente] Recebido marcador de Fim de Arquivo seq=%u. Transferencia completa.\n", seq);
+        if (success) {
             break;
         }
     }
 
     fclose(fp);
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 0;
-    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
-    return 1;
+
+    if (!success) {
+        remove(file_name);
+    }
+
+    sock_timeout.tv_sec = 0;
+    sock_timeout.tv_usec = 0;
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&sock_timeout, sizeof(sock_timeout));
     
+    return success;
 }
 
 int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
