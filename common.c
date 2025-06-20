@@ -73,7 +73,7 @@ void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct so
         }
     }
 
-    send(sockfd, &resposta, bytes_to_send, 0);
+    //send(sockfd, &resposta, bytes_to_send, 0);
 
 }
 
@@ -228,7 +228,11 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
                 printf("[Cliente] Tesouro recebido para seq=%u\n", seq_esperado);
                 return 2;
             } else if (resposta.tipo == 15 && resposta.seq == seq_esperado) { // ERRO
-                if (strcmp((char*)resposta.dados, "1") == 0) {              // Erro de espaço insuficiente
+                if (strcmp((char*)resposta.dados, "0") == 0) {              // Erro de permissao
+                    printf("[Servidor] Sem permissao de leitura\n");
+                    return -1;
+                }
+                else if (strcmp((char*)resposta.dados, "1") == 0) {              // Erro de espaço insuficiente
                     printf("[Servidor] Espaco insuficiente para o arquivo\n");
                     return 3;
                 }
@@ -309,28 +313,32 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
     unsigned char buffer[2048];
 
     while (1) {
+
         struct sockaddr_ll addr;
         socklen_t addrlen = sizeof(addr);
         ssize_t bytes = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&addr, &addrlen);
         if (bytes < 5) continue;                                                            // Verifica se o tamanho mínimo do frame é atendido
 
         for (ssize_t i = 0; i < bytes - 4;) {                                               // Percorre o buffer procurando por frames válidos
+
             if (buffer[i] == MARCADOR) {                                                    // Verifica se o marcador é válido
+
                 Frame *f = (Frame *)&buffer[i];
                 unsigned char esperado = calcula_checksum(f);
 
                 if (f->checksum != esperado) {                                              // Verifica se o checksum é válido
                     printf("[%s] Checksum inválido seq=%u\n", modo_servidor ? "Servidor" : "Cliente", f->seq);
                     envia_resposta(sockfd, f->seq, 1, &addr, NULL); // Envia NACK
-                    i += sizeof(Frame);
+                    i++;
                     continue;
                 }
 
                 unsigned char tipo = f->tipo & 0x0F;                                        // Extrai o tipo do frame
 
                 if (modo_servidor) {
+
                     if (tipo == 0 || tipo == 1 || tipo == 2) {                              // Ignora ACK, NACK ou OK+ACK
-                        i += sizeof(Frame);
+                        i += FRAME_HEADER_SIZE + f->tamanho;
                         continue;
                     }
 
@@ -359,21 +367,34 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     else if (tipo == 13) update_y('-', current_pos);
                     else if (tipo == 10) update_y('+', current_pos);
 
-                    move_t *mv = malloc(sizeof(move_t));                                    // Aloca memória para o movimento
-                    mv->pos = *current_pos;                         
-                    mv->next = mv->prev = NULL;
-                    add_move(mv);                                                           // Adiciona o movimento à lista de movimentos
-                    printf("[Servidor] Posição (%d, %d) salva\n", mv->pos.x, mv->pos.y);
+                    add_move(current_pos);                                                  // Adiciona o movimento à lista de movimentos
                     steps_taken++;
 
                     int tesouro = treasure_found(tesouros, current_pos->x, current_pos->y); // Verifica se um tesouro foi encontrado
+
                     if (tesouro >= 0) {
+
                         envia_resposta(sockfd, f->seq, 2, &addr, NULL);                     // OK+ACK
+                        tesouros[tesouro].encontrado = 1;                                  // Marca o tesouro como encontrado
+                        print_info(tesouros);
                         treasures_found++;
+
                         unsigned char nome[64];
                         unsigned char file_path[90];
                         int tipo_arq = find_file(tesouros[tesouro].id, nome, sizeof(nome), file_path, sizeof(file_path));
-                        if (tipo_arq >= 0) {                                                                                    // Se o arquivo foi encontrado
+
+                        if (tipo_arq >= 0) {
+
+                            if (access((char*)file_path, R_OK) == -1) {                       // Verifica se o arquivo pode ser lido
+                                perror("[Servidor] Erro de permissão de acesso ao arquivo");
+                                unsigned char error_code[2] = {'0', '\0'};
+                                envia_resposta(sockfd, f->seq, 15, &addr, error_code);
+                                i += FRAME_HEADER_SIZE + f->tamanho;
+                                continue;
+
+                            }
+                            
+                            printf("[Servidor] Arquivo encontrado para o tesouro %d: %s\n", tesouros[tesouro].id, nome);
                             struct stat filestat;
                             if (stat((char*)file_path, &filestat) != 0) {                                                       // Obtém informações do arquivo
                                 perror("[Servidor] Erro ao obter informações do arquivo");
@@ -386,7 +407,8 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
 
                             int authorized = envia_mensagem(sockfd, f->seq, 4, (unsigned char*)tamanho_str, strlen(tamanho_str), 1, &addr);
 
-                            if (authorized) {                                               // Se o cliente autorizou o recebimento do arquivo       
+                            if (authorized) {                                               // Se o cliente autorizou o recebimento do arquivo      
+
                                 unsigned char next_seq = (f->seq + 1) % 32;
                                 printf("[Servidor] Enviando arquivo %s com extensão %s\n", nome, extensoes[tipo_arq]);
                                 int name_sent = envia_mensagem(sockfd, next_seq, tipo_arq + 6, nome, strlen((char*)nome), 1, &addr);
@@ -409,10 +431,12 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                             envia_resposta(sockfd, f->seq, 15, &addr, error_code);
                         }
                     } else {                                                                // Se não foi encontrado nenhum tesouro
+                        print_info(); 
                         envia_resposta(sockfd, f->seq, 0, &addr, NULL); // ACK
                     }
 
                 } else {
+
                     if (tipo >= 6 && tipo <= 8) {
 
                         unsigned char file_name[140];
@@ -427,6 +451,7 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                         }
 
                     } else if (tipo == 4) {
+
                         printf("[Cliente] Tamanho do arquivo recebido: %s bytes\n", f->dados);
                         long file_size = strtol((char*)f->dados, NULL, 10);
                         printf("[Cliente] Tamanho do arquivo (long): %ld bytes\n", file_size);
@@ -447,21 +472,19 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                             unsigned char error_code[2] = {'1', '\0'};
                             envia_resposta(sockfd, f->seq, 15, cliente_addr, error_code); // tipo 15 = erro
                         }
-                        //return;
-                    } else if (tipo == 14) {
-                        printf("Arquivo não encontrado\n");
-                        return;
-                    }
-                    else if (tipo == 15) {
+
+                    } else if (tipo == 15) {
                         if (strcmp((char*)f->dados, "2") == 0)
-                            printf("File Not Found, Error Code: %s\n", f->dados);
+                            printf("Arquivo nao encontrado, Error Code: %s\n", f->dados);
+                        else if (strcmp((char*)f->dados, "0") == 0)
+                            printf("Permissao negada, Error Code: %s\n", f->dados);
                         return;
                     } else {
                         printf("[Cliente] Tipo inesperado %u\n", tipo);
                     }
                 }
 
-                i += sizeof(Frame);
+                i += FRAME_HEADER_SIZE + f->tamanho;
             } else {
                 i++;
             }

@@ -27,8 +27,10 @@ extern move_t *move_list;
 
 //SERVIDOR:
 tes_t* game_start();
-void add_move(move_t *move);
+void add_move(coord_t* current_pos);
+void add_treasure(coord_t* current_pos, int treasure_id);
 int treasure_found(tes_t *treasures, int x, int y); 
+void print_info();
 
 void update_x(char dir, coord_t *pos);
 void update_y(char dir, coord_t *pos);

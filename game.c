@@ -11,11 +11,48 @@
 */
 
 move_t *move_list = NULL;
+tes_t *treasure_list = NULL;
+
+void print_move (void *ptr)
+{
+    move_t *elem = ptr ;
+
+    if (!elem)
+        return ;
+
+    printf(" (%d, %d)", (7 - elem->pos.x), elem->pos.y); // Imprime a posição do movimento, 7 - x para o canto inferior esquerdo ser 0,0
+
+}
+
+void print_treasure (tes_t *treasures)
+{
+
+    printf("Treasure List: ");
+    printf("[ ");
+    for (int i = 0; i < 8; i++) {
+        if (treasures[i].encontrado) {
+            printf("{(%d, %d):%d}", (7 - treasures[i].pos.x), treasures[i].pos.y, treasures[i].id);
+        }
+    }
+    printf(" ]\n");
+
+}
+
+void print_info(tes_t *treasures) {
+
+    print_treasure(treasures); // Imprime os tesouros encontrados
+    queue_print("Move List", (queue_t*)move_list, print_move);
+}
+
 
 //Adiciona um movimento da lista
-void add_move(move_t *move) {
+void add_move(coord_t* current_pos) {
 
-    queue_append((queue_t **) &move_list, (queue_t*) move);
+    move_t *mv = malloc(sizeof(move_t));                                    // Aloca memória para o movimento
+    mv->pos = *current_pos;                         
+    mv->next = mv->prev = NULL;
+    queue_append((queue_t **) &move_list, (queue_t*) mv);
+
 
 }
 
@@ -31,15 +68,6 @@ tes_t* game_start() {
         tesouros[i].pos.x = rand() % 8;
         tesouros[i].pos.y = rand() % 8;
     }
-
-    //Cria uma struct para a posicao inicial e salva ela numa lista
-    move_t* first_move = malloc(sizeof(move_t));
-    first_move->pos.x = 7;
-    first_move->pos.y = 0;
-    first_move->next = NULL;
-    first_move->prev = NULL;
-
-    add_move(first_move);
 
     return tesouros;
 
@@ -123,11 +151,21 @@ void update_map(char map[8][8], coord_t pos, int treasure_id) {
 */
 
 void update_x(char dir, coord_t *pos) {
-    if (dir == '+') pos->x = (pos->x >= 6) ? pos->x - 6 : pos->x + 2;
-    else if (dir == '-') pos->x = (pos->x <= 1) ? pos->x + 6 : pos->x - 2;
+    if (dir == '+') {
+        // Se x for 7, volta para 0. Caso contrário, incrementa 1.
+        pos->x = (pos->x >= 7) ? pos->x - 7 : pos->x + 1;
+    } else if (dir == '-') {
+        // Se x for 0, volta para 7. Caso contrário, decrementa 1.
+        pos->x = (pos->x <= 0) ? pos->x + 7 : pos->x - 1;
+    }
 }
 
 void update_y(char dir, coord_t *pos) {
-    if (dir == '+') pos->y = (pos->y >= 6) ? pos->y - 6 : pos->y + 2;
-    else if (dir == '-') pos->y = (pos->y <= 1) ? pos->y + 6 : pos->y - 2;
+    if (dir == '+') {
+        // Se y for 7, volta para 0. Caso contrário, incrementa 1.
+        pos->y = (pos->y >= 7) ? pos->y - 7 : pos->y + 1;
+    } else if (dir == '-') {
+        // Se y for 0, volta para 7. Caso contrário, decrementa 1.
+        pos->y = (pos->y <= 0) ? pos->y + 7 : pos->y - 1;
+    }
 }

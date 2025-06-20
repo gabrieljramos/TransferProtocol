@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
     //Imprime lista de tesouros (para teste apenas)
     printf("Tesouros:\n");
     for (int i = 0; i < 8; i++) {
-        printf("(%d,%d)\n", tesouros[i].pos.x,tesouros[i].pos.y);
+        printf("(%d,%d)\n", ( 7 - tesouros[i].pos.x),tesouros[i].pos.y);
     }
 
     coord_t current_pos;                                                    // Inicializa a posição inicial do jogador                                  
