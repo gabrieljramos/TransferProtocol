@@ -56,6 +56,16 @@ void add_move(coord_t* current_pos) {
 
 }
 
+int tesouro_igual(tes_t *treasures, int x, int y, int max) {
+
+    for (int i = 0; i < max; i++) {
+        if (treasures[i].pos.x == x && treasures[i].pos.y == y) {
+            return 1; // Tesouro já existe na posição
+        }
+    }
+    return 0; // Tesouro não existe na posição
+}
+
 //Inicializa o jogo
 tes_t* game_start() {
 
@@ -67,6 +77,10 @@ tes_t* game_start() {
         tesouros[i].encontrado = 0;                                 // Inicializa como não encontrado
         tesouros[i].pos.x = rand() % 8;
         tesouros[i].pos.y = rand() % 8;
+        while (tesouro_igual(tesouros, tesouros[i].pos.x, tesouros[i].pos.y, i)) {
+            tesouros[i].pos.x = rand() % 8;                       // Gera nova posição se já existir um tesouro na posição
+            tesouros[i].pos.y = rand() % 8;
+        }
     }
 
     return tesouros;
