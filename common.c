@@ -58,8 +58,10 @@ void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct so
     int bytes_sent;
 
     if (bytes_to_send < MIN_ETH_PAYLOAD_SIZE) {   // Se o tamanho do frame for menor que o mínimo, preenche com zeros
+
         unsigned char padded_buffer[MIN_ETH_PAYLOAD_SIZE] = {0};
         memcpy(padded_buffer, &resposta, bytes_to_send);
+
         if (origem != NULL) {
             bytes_sent = sendto(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0, (struct sockaddr*)origem, sizeof(struct sockaddr_ll));
         } else {
@@ -72,8 +74,6 @@ void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct so
             bytes_sent = send(sockfd, &resposta, bytes_to_send, 0);
         }
     }
-
-    //send(sockfd, &resposta, bytes_to_send, 0);
 
 }
 
@@ -239,40 +239,40 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
     while (timestamp() - inicio <= timeoutMillis) {
         ssize_t n = recv(sockfd, &resposta, sizeof(resposta), 0);
         if (n > 0 && resposta.marcador == MARCADOR) {
-            printf("[Cliente] Recebido %zd bytes\n", n);
-            printf("[Cliente] Dados recebidos: ");
+            printf("[Cliente/Servidor] Recebido %zd bytes\n", n);
+            printf("[Cliente/Servidor] Dados recebidos: ");
             for (int i = 0; i < n; i++) printf("%02X ", ((unsigned char*)&resposta)[i]);
             printf("\n");
 
             if (resposta.tipo == 0 && resposta.seq == seq_esperado) { //ACK
-                printf("[Cliente] ACK recebido para seq=%u\n", seq_esperado);
+                printf("[Cliente/Servidor] ACK recebido para seq=%u\n", seq_esperado);
                 return 1;
             } else if (resposta.tipo == 1 && resposta.seq == seq_esperado) { //NACK
-                printf("[Cliente] NACK recebido para seq=%u\n", seq_esperado);
+                printf("[Cliente/Servidor] NACK recebido para seq=%u\n", seq_esperado);
                 return -1;
             } else if (resposta.tipo == 2 && resposta.seq == seq_esperado) { // OK + ACK
                 printf("[Cliente] Tesouro recebido para seq=%u\n", seq_esperado);
                 return 2;
             } else if (resposta.tipo == 15 && resposta.seq == seq_esperado) { // ERRO
                 if (strcmp((char*)resposta.dados, "0") == 0) {              // Erro de permissao
-                    printf("[Servidor] Sem permissao de leitura\n");
-                    return -1;
+                    printf("[Cliente] Sem permissao de leitura\n");
+                    return 3;
                 }
                 else if (strcmp((char*)resposta.dados, "1") == 0) {              // Erro de espaço insuficiente
                     printf("[Servidor] Espaco insuficiente para o arquivo\n");
-                    return 3;
+                    return 4;
                 }
                 else if (strcmp((char*)resposta.dados, "3") == 0) {         // Erro de jogo já iniciado
-                    printf("[Servidor] Jogo ja iniciado, reiniciando...\n");
-                    return 4;
+                    printf("[Cliente] Jogo ja iniciado, reiniciando...\n");
+                    return 5;
                 }
             }
             else {
-                printf("[Cliente] Frame ignorado (tipo=%u, seq=%u)\n", resposta.tipo, resposta.seq);
+                printf("[Cliente/Servidor] Frame ignorado (tipo=%u, seq=%u)\n", resposta.tipo, resposta.seq);
                 continue;
             }
         } else {
-            printf("[Cliente] Timeout esperando ACK/NACK para seq=%u\n", seq_esperado);
+            printf("[Cliente/Servidor] Timeout esperando ACK/NACK para seq=%u\n", seq_esperado);
             return 0;
         }
     }
@@ -306,22 +306,22 @@ int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned c
 
         int resultado = espera_ack(sockfd, seq, timeout);
 
-        if (resultado == 1) {
+        if (resultado == 1) { // ACK recebido
             return 1;
-        } else if (resultado == -1) {
+        } else if (resultado == -1) { // NACK recebido
             printf("[%s] NACK recebido para seq=%u, retransmitindo...\n", modo_servidor ? "Servidor" : "Cliente", seq);
             tentativas++;
         }
-        else if (resultado == 2) {
+        else if (resultado == 2) {  // Tesouro recebido
             escuta_mensagem(sockfd, 0, NULL, NULL, NULL); // Escuta a mensagem de tesouro recebida
             return 2;
-        } else if(resultado == 3) {
+        } else if(resultado == 4) { // Erro de espaço insuficiente
             return -1;
         }
-        else if (resultado == 4) {
+        else if (resultado == 5) { // Erro de jogo já iniciado
             return 5;
         }
-        else {
+        else if (resultado == 0) { // Timeout ou erro ao receber ACK/NACK
             tentativas++;
             timeout *= 2;
         }
@@ -331,7 +331,7 @@ int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned c
         printf("[%s] Falha após %d tentativas no seq=%u\n", modo_servidor ? "Servidor" : "Cliente", MAX_RETRANSMISSIONS, seq);
     }
 
-    return 0;
+    return 0; // Falha ao enviar a mensagem após o número máximo de tentativas
 
 }
 
@@ -433,16 +433,26 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
 
                             int authorized = envia_mensagem(sockfd, f->seq, 4, (unsigned char*)tamanho_str, strlen(tamanho_str), 1, &addr);
 
-                            if (authorized) {                                               // Se o cliente autorizou o recebimento do arquivo      
+                            if (authorized == 1) {                                               // Se o cliente autorizou o recebimento do arquivo      
 
                                 unsigned char next_seq = (f->seq + 1) % 32;
                                 printf("[Servidor] Enviando arquivo %s com extensão %s\n", nome, extensoes[tipo_arq]);
                                 int name_sent = envia_mensagem(sockfd, next_seq, tipo_arq + 6, nome, strlen((char*)nome), 1, &addr);
 
-                                if (name_sent) {
+                                if (name_sent == 1) { // Se o nome do arquivo foi enviado com sucesso
                                     next_seq = (next_seq + 1) % 32;
                                     servidor_envia_arquivo(sockfd, next_seq, (char*)file_path, &addr);
+                                } else if (name_sent == 0) { // Se não foi possível enviar o nome do arquivo
+                                    printf("[Servidor] Falha ao enviar nome do arquivo %s\n", nome);
+                                    return; // Assumindo que o cliente não está mais ativo
                                 }
+                            } else if (authorized == 4) { // Se o cliente não tem espaço suficiente
+                                printf("[Servidor] Cliente não tem espaço suficiente para o arquivo\n");
+                                i += FRAME_HEADER_SIZE + f->tamanho; // Vai p/ o próximo frame
+                                continue;
+                            } else if (authorized == 0) { // Resposta não recebida, timeouts ou nacks excessivos
+                                printf("[Servidor] Resposta nao recebida\n");
+                                return; //Assume que o cliente não está mais ativo
                             }
 
                             if (treasures_found >= 8) {                                          // Se todos os tesouros foram encontrados
@@ -497,6 +507,7 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                             printf("[Cliente] Espaço insuficiente (%lld bytes livres)\n", livre);
                             unsigned char error_code[2] = {'1', '\0'};
                             envia_resposta(sockfd, f->seq, 15, cliente_addr, error_code); // tipo 15 = erro
+                            return;
                         }
 
                     } else if (tipo == 15) {

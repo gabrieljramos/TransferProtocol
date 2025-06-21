@@ -1,10 +1,17 @@
 #include "common.h"
 
 int tesouros_encontrados = 0;                                                // Variável global para contar os tesouros encontrados
+int game_state = 0;                                                          // Variável global para o estado do jogo
 
 void make_move(char map[8][8], int sockfd, int seq, coord_t *current_pos, int direction) {
 
     int result = envia_mensagem(sockfd, seq, direction, NULL, 0, 0, NULL);  // Envia a mensagem de movimento para o servidor
+
+    if (result == 0) {
+        printf("Timeout ou erro ao receber ACK/NACK. Tente novamente.\n");
+        game_state = QUIT;                                                  // Se não recebeu ACK/NACK, encerra o jogo
+        return;
+    }
 
     if (map[current_pos->x][current_pos->y] == '#') {
         map[current_pos->x][current_pos->y] = 'T';                          // Marca a posição atual com T se for um tesouro
@@ -49,7 +56,10 @@ int main(int argc, char* argv[]) {
     int sockfd = cria_raw_socket(interface);                                // Cria um raw_socket para a interface especificada
 
     int seq = 0;                                                            // Inicializa a sequência de pacotes
-    int game_state = envia_mensagem(sockfd, seq, 14, NULL, 0, 0, NULL);     // Confirma se ha um jogo em andamento
+    game_state = envia_mensagem(sockfd, seq, 14, NULL, 0, 0, NULL);         // Confirma se ha um jogo em andamento
+    if (game_state != 1) {
+        game_state = QUIT;
+    }
 
     seq = (seq + 1) % 32;                                                   // Incrementa a sequência de pacotes
 
