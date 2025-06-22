@@ -1,0 +1,5 @@
+{
+    "files.associations": {
+        "statvfs.h": "c"
+    }
+}
