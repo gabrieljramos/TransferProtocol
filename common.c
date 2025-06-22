@@ -7,6 +7,7 @@ unsigned char *extensoes[] = {".txt", ".mp4", ".jpg"};
 
 int steps_taken = 0;
 int treasures_found = 0;
+int last_seq = -1;
 
 long long timestamp() {
     struct timeval tp;
@@ -358,8 +359,14 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     i++;
                     continue;
                 }
+                int is_duplicate = 0;
+                if (f->tipo >= 10 && f->tipo <= 13 && f->seq == last_seq) {
+                    is_duplicate = 1;
+                    printf("[Servidor] Duplicado de movimento recebido (seq=%u).\n", f->seq);
+                }
 
-                unsigned char tipo = f->tipo & 0x0F;                                        // Extrai o tipo do frame
+                //unsigned char tipo = f->tipo & 0x0F;                                        // Extrai o tipo do frame
+                unsigned char tipo = f->tipo;
 
                 if (modo_servidor) {
 
@@ -388,22 +395,27 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     }
 
                     // Processa movimento
-                    if (tipo == 11) update_x('-', current_pos);
-                    else if (tipo == 12) update_x('+', current_pos);
-                    else if (tipo == 13) update_y('-', current_pos);
-                    else if (tipo == 10) update_y('+', current_pos);
+                    if (!is_duplicate) {
+                        if (tipo == 11) update_x('-', current_pos);
+                        else if (tipo == 12) update_x('+', current_pos);
+                        else if (tipo == 13) update_y('-', current_pos);
+                        else if (tipo == 10) update_y('+', current_pos);
 
-                    add_move(current_pos);                                                  // Adiciona o movimento à lista de movimentos
-                    steps_taken++;
+                        add_move(current_pos);                                                  // Adiciona o movimento à lista de movimentos
+                        steps_taken++;
+                        last_seq = f->seq;
+                    }
 
                     int tesouro = treasure_found(tesouros, current_pos->x, current_pos->y); // Verifica se um tesouro foi encontrado
 
                     if (tesouro >= 0) {
 
-                        envia_resposta(sockfd, f->seq, 2, &addr, NULL);                     // OK+ACK
-                        tesouros[tesouro].encontrado = 1;                                  // Marca o tesouro como encontrado
-                        print_info(tesouros);
-                        treasures_found++;
+                        envia_resposta(sockfd, f->seq, 2, &addr, NULL);                        // OK+ACK
+                        if (!is_duplicate) {
+                            tesouros[tesouro].encontrado = 1;                                  // Marca o tesouro como encontrado
+                            print_info(tesouros);
+                            treasures_found++;
+                        }
 
                         unsigned char nome[64];
                         unsigned char file_path[90];
