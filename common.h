@@ -23,12 +23,12 @@
 
 typedef struct {
     unsigned char marcador;
-    /*unsigned char tamanho;
+    unsigned char tamanho;
     unsigned char seq;
-    unsigned char tipo;*/
-    unsigned int tamanho : 7;
-    unsigned int seq    : 5;
-    unsigned int tipo   : 4;
+    unsigned char tipo;
+    //unsigned int tamanho : 7;
+    //unsigned int seq    : 5;
+    //unsigned int tipo   : 4;
     unsigned char checksum;
     unsigned char dados[MAX_DADOS];
 } __attribute__((packed)) Frame;

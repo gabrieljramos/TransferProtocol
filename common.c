@@ -344,12 +344,34 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
         struct sockaddr_ll addr;
         socklen_t addrlen = sizeof(addr);
         ssize_t bytes = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&addr, &addrlen);
+
         if (bytes < 5) continue;                                                            // Verifica se o tamanho mínimo do frame é atendido
 
         for (ssize_t i = 0; i < bytes - 4;) {                                               // Percorre o buffer procurando por frames válidos
 
             if (buffer[i] == MARCADOR) {                                                    // Verifica se o marcador é válido
 
+                 // --- Manual Unpacking ---
+                unsigned char tipo = (buffer[i+1] >> 4) & 0x0F;
+                unsigned char seq = ((buffer[i+1] & 0x0F) << 1) | ((buffer[i+2] >> 7) & 0x01);
+                unsigned char tam = buffer[i+2] & 0x7F;
+                unsigned char checksum_recebido = buffer[i+3];
+                unsigned char* dados = &buffer[i+4];
+
+                // --- Verify Checksum ---
+                unsigned char checksum_calculado = 0;
+                checksum_calculado += buffer[i+1];
+                checksum_calculado += buffer[i+2];
+                for (int j = 0; j < tam; ++j) {
+                    checksum_calculado += dados[j];
+                }
+
+                if (checksum_recebido != checksum_calculado) {
+                    printf("[Servidor] Checksum inválido seq=%u\n", seq);
+                    // handle error
+                    continue;
+                }
+                
                 Frame *f = (Frame *)&buffer[i];
                 unsigned char esperado = calcula_checksum(f);
 
@@ -539,4 +561,44 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
             }
         }
     }
+}
+
+// In common.c
+// This function now creates a raw buffer instead of a Frame struct
+// The return value is the size of the packet to send.
+int monta_pacote_manual(unsigned char* buffer, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam) {
+    
+    // Ensure tam is within the 7-bit limit
+    if (tam > 127) tam = 127;
+
+    // --- Manual Packing ---
+    // Byte 0: Marcador
+    buffer[0] = MARCADOR;
+
+    // Bytes 1 and 2: Pack tipo (4 bits), seq (5 bits), and tam (7 bits) into 16 bits (2 bytes)
+    // We will define a fixed order: TTTT SSSS S_TT TTTTT
+    buffer[1] = ((tipo & 0x0F) << 4) | ((seq >> 1) & 0x0F);
+    buffer[2] = ((seq & 0x01) << 7) | (tam & 0x7F);
+
+    // Byte 3: Placeholder for Checksum
+    buffer[3] = 0;
+
+    // Bytes 4 onwards: Data
+    if (dados && tam > 0) {
+        memcpy(&buffer[4], dados, tam);
+    }
+
+    // --- Checksum Calculation ---
+    // The
+    //checksum is now calculated on the raw buffer.
+    unsigned char checksum = 0;
+    // We calculate checksum over Bytes 1, 2 and the data.
+    checksum += buffer[1];
+    checksum += buffer[2];
+    for (int i = 0; i < tam; ++i) {
+        checksum += buffer[4 + i];
+    }
+    buffer[3] = checksum; // Place the final checksum
+
+    return 4 + tam; // Return the total size of the packet
 }
