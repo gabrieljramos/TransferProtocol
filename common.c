@@ -351,12 +351,14 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
 
             if (buffer[i] == MARCADOR) {                                                    // Verifica se o marcador é válido
 
+                Frame *f = (Frame *)&buffer[i];
+
                  // --- Manual Unpacking ---
-                unsigned char tipo = (buffer[i+1] >> 4) & 0x0F;
-                unsigned char seq = ((buffer[i+1] & 0x0F) << 1) | ((buffer[i+2] >> 7) & 0x01);
-                unsigned char tam = buffer[i+2] & 0x7F;
-                unsigned char checksum_recebido = buffer[i+3];
-                unsigned char* dados = &buffer[i+4];
+                f->tipo = (buffer[i+1] >> 4) & 0x0F;
+                f->seq = ((buffer[i+1] & 0x0F) << 1) | ((buffer[i+2] >> 7) & 0x01);
+                f->tamanho = buffer[i+2] & 0x7F;
+                f->checksum = buffer[i+3];
+                f->dados = &buffer[i+4];
 
                 // --- Verify Checksum ---
                 unsigned char checksum_calculado = 0;
@@ -371,8 +373,7 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     // handle error
                     continue;
                 }
-                
-                Frame *f = (Frame *)&buffer[i];
+
                 unsigned char esperado = calcula_checksum(f);
 
                 if (f->checksum != esperado) {                                              // Verifica se o checksum é válido
