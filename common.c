@@ -313,10 +313,18 @@ void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct so
 
     if (bytes_to_send < MIN_ETH_PAYLOAD_SIZE) {   // Se o tamanho do frame for menor que o mínimo, preenche com zeros
 
+        printf("[Cliente/Servidor] Enviando antes padding: ");
+            for (int i = 0; i < bytes_to_send; i++) printf("%02X ", ((unsigned char*)(Frame*)send_buffer)[i]);
+            printf("\n");
+
         unsigned char padded_buffer[MIN_ETH_PAYLOAD_SIZE] = {0};
         memcpy(padded_buffer, send_buffer, bytes_to_send);
 
-        printf("Enviando resposta\n");
+        printf("[Cliente/Servidor] Enviando depois padding: ");
+            for (int i = 0; i < MIN_ETH_PAYLOAD_SIZE; i++) printf("%02X ", ((unsigned char*)(Frame*)padded_buffer)[i]);
+            printf("\n");
+
+        printf("Enviando resposta tipo %u, seq %u\n", tipo, seq);
 
         if (origem != NULL) {
             bytes_sent = sendto(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0, (struct sockaddr*)origem, sizeof(struct sockaddr_ll));
@@ -429,8 +437,18 @@ int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned c
         bytes_to_send = tamanho_para_enviar; // Atualiza o tamanho após a inserção do VLAN
 
         if (bytes_to_send < MIN_ETH_PAYLOAD_SIZE) {         // Se o tamanho do frame for menor que o mínimo, preenche com zeros
+
+            printf("[Cliente/Servidor] Enviando antes padding: ");
+            for (int i = 0; i < bytes_to_send; i++) printf("%02X ", ((unsigned char*)(Frame*)send_buffer)[i]);
+            printf("\n");
+
             unsigned char padded_buffer[MIN_ETH_PAYLOAD_SIZE] = {0};
             memcpy(padded_buffer, send_buffer, bytes_to_send);
+
+            printf("[Cliente/Servidor] Enviando depois padding: ");
+            for (int i = 0; i < MIN_ETH_PAYLOAD_SIZE; i++) printf("%02X ", ((unsigned char*)(Frame*)padded_buffer)[i]);
+            printf("\n");
+
             bytes = sendto(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0, (struct sockaddr*)destino, sizeof(struct sockaddr_ll));
         } else {                                            // Se o tamanho do frame for maior ou igual ao mínimo, envia normalmente
             bytes = sendto(sockfd, send_buffer, bytes_to_send, 0, (struct sockaddr*)destino, sizeof(struct sockaddr_ll));
@@ -483,15 +501,15 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
         struct sockaddr_ll addr;
         socklen_t addrlen = sizeof(addr);
         ssize_t bytes = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&addr, &addrlen);
-        printf("[Servidor DEBUG 1] Recebidos %zd bytes.\n", bytes);
-        printf("Buffer: %s\n", (char*) buffer);
+        //printf("[Servidor DEBUG 1] Recebidos %zd bytes.\n", bytes);
+        //printf("Buffer: %s\n", (char*) buffer);
         int tam_buffer = bytes;
         remove_vlan(buffer, &tam_buffer);
         if (bytes < 5) 
             continue;                                                                       // Verifica se o tamanho mínimo do frame é atendido
         //printf("[Servidor DEBUG 1] Recebidos %zd bytes.\n", bytes);
         for (ssize_t i = 0; i < bytes - 4;) {                                               // Percorre o buffer procurando por frames válidos
-            printf("[Servidor DEBUG 2] Verificando byte %zd do buffer...\n", i);
+            //printf("[Servidor DEBUG 2] Verificando byte %zd do buffer...\n", i);
             if (buffer[i] == MARCADOR) {                                                    // Verifica se o marcador é válido
                 printf("[Servidor DEBUG 3] MARCADOR (0x7E) encontrado!\n");
                 Frame f;
@@ -645,6 +663,8 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                         }
                     } else {                                                                // Se não foi encontrado nenhum tesouro
                         print_info(); 
+                        if (is_duplicate)
+                            printf("REENVIANDO ACK SEQ ATUAL %u, SEQ ANTIGA %u\n", f.seq, last_seq);
                         envia_resposta(sockfd, f.seq, 0, &addr, NULL); // ACK
                     }
 
