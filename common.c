@@ -2,6 +2,9 @@
 
 #define FRAME_HEADER_SIZE (sizeof(Frame) - 127)
 #define MIN_ETH_PAYLOAD_SIZE 14
+#define VLAN_BYTE_1 0x81
+#define VLAN_BYTE_2 0x88
+#define ESCAPE_BYTE 0xFF
 
 unsigned char *extensoes[] = {".txt", ".mp4", ".jpg"};
 
@@ -46,37 +49,60 @@ int cria_raw_socket(const char *interface) {
     return sockfd;
 }
 
-void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct sockaddr_ll* origem, unsigned char *msg) {
+// ==============================================================================================================================
 
-    Frame resposta;
+int insere_vlan(unsigned char *dados, int capacidade, int *tamanho_atual) {
+    int contador = 0;
+    // Iteramos de trás para frente
+    for (int i = (*tamanho_atual) - 1; i >= 0; i--) {
+        if (dados[i] == VLAN_BYTE_1 || dados[i] == VLAN_BYTE_2) {
+            // Verifica se há espaço para inserir mais um byte.
+            if (*tamanho_atual >= capacidade) {
+                fprintf(stderr, "Erro: Buffer cheio. Impossível inserir byte de escape.\n");
+                return -1; // Retorna erro
+            }
 
-    if (msg == NULL)
-        monta_frame(&resposta, seq, tipo, NULL, 0);
-    else
-        monta_frame(&resposta, seq, tipo, msg, strlen((char*)msg));
+            // Desloca todos os bytes da posição i+1 em diante para a direita.
+            memmove(&dados[i + 2], &dados[i + 1], (*tamanho_atual) - (i + 1));
 
-    size_t bytes_to_send = FRAME_HEADER_SIZE + resposta.tamanho;
-    int bytes_sent;
+            // Insere o byte de escape.
+            dados[i + 1] = ESCAPE_BYTE;
 
-    if (bytes_to_send < MIN_ETH_PAYLOAD_SIZE) {   // Se o tamanho do frame for menor que o mínimo, preenche com zeros
-
-        unsigned char padded_buffer[MIN_ETH_PAYLOAD_SIZE] = {0};
-        memcpy(padded_buffer, &resposta, bytes_to_send);
-
-        if (origem != NULL) {
-            bytes_sent = sendto(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0, (struct sockaddr*)origem, sizeof(struct sockaddr_ll));
-        } else {
-            bytes_sent = send(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0);
-        }
-    } else {            // Se o tamanho do frame for maior ou igual ao mínimo, envia normalmente
-        if (origem != NULL) {
-            bytes_sent = sendto(sockfd, &resposta, bytes_to_send, 0, (struct sockaddr*)origem, sizeof(struct sockaddr_ll));
-        } else {
-            bytes_sent = send(sockfd, &resposta, bytes_to_send, 0);
+            // Atualiza o tamanho e o contador.
+            (*tamanho_atual)++;
+            contador++;
         }
     }
-
+    return contador;
 }
+
+int remove_vlan(unsigned char *dados, int *tamanho_atual) {
+    int write_idx = 0; // Ponteiro de escrita
+    int read_idx = 0;  // Ponteiro de leitura
+    int contador = 0;
+
+    while (read_idx < *tamanho_atual) {
+        // Copia o byte atual
+        dados[write_idx] = dados[read_idx];
+
+        // Verifica se o byte que acabamos de copiar é um dos problemáticos
+        if ((dados[write_idx] == VLAN_BYTE_1 || dados[write_idx] == VLAN_BYTE_2) && (read_idx + 1 < *tamanho_atual) && (dados[read_idx + 1] == ESCAPE_BYTE)) {
+            // Se for, e o próximo for um byte de escape, pulamos o byte de escape
+            read_idx++; // Incrementa o ponteiro de leitura para pular o ESCAPE_BYTE
+            contador++; // Conta como um byte removido
+        }
+        
+        write_idx++;
+        read_idx++;
+    }
+
+    // O novo tamanho dos dados é a posição final do ponteiro de escrita
+    *tamanho_atual = write_idx;
+    return contador;
+}
+
+// ==============================================================================================================================
+// ==============================================================================================================================
 
 //Faz a soma de todos os campos necessarios e retorna seu valor
 unsigned char calcula_checksum(Frame *f) {
@@ -90,22 +116,8 @@ unsigned char calcula_checksum(Frame *f) {
     return sum;
 }
 
-//Monta a struct do protocolo
-void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam) {
-    f->marcador = MARCADOR;
-    f->seq = seq & 0x1F;
-    f->tipo = tipo & 0X0F;
-    if (tipo == 0 || tipo == 1 || (tipo >= 10 && tipo <= 13)) { //Tipos que nao possuem dados
-        f->tamanho = 0;
-        memset(f->dados, 0, sizeof(f->dados));
-    } else { //Caso tam > 127 trunca tam
-        if (tam > 127) tam = 127;
-        f->tamanho = tam;
-        memcpy(f->dados, dados, tam);
-        f->dados[tam] = '\0';
-    }
-    f->checksum = calcula_checksum(f);
-}
+// ==============================================================================================================================
+// ==============================================================================================================================
 
 int find_file(int file_num, unsigned char *file_name, size_t name_size, unsigned char *file_path, size_t path_size) {
 
@@ -122,6 +134,32 @@ int find_file(int file_num, unsigned char *file_name, size_t name_size, unsigned
     }
     return -1;
 }
+
+// ==============================================================================================================================
+// ==============================================================================================================================
+
+unsigned char* monta_frame(unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam) {
+
+    unsigned char *frame_buffer = (unsigned char*) malloc(sizeof(Frame));
+    Frame *f = (Frame*) frame_buffer;
+    f->marcador = MARCADOR;
+    f->seq = seq & 0x1F;
+    f->tipo = tipo & 0X0F;
+    if (tipo == 0 || tipo == 1 || tipo == 2 || tipo == 3 || tipo == 14 || (tipo >= 10 && tipo <= 13)) { //Tipos que nao possuem dados
+        f->tamanho = 0;
+        memset(f->dados, 0, sizeof(f->dados));
+    } else { //Caso tam > 127 trunca tam
+        if (tam > 127) tam = 127;
+        f->tamanho = tam;
+        memcpy(f->dados, dados, tam);
+        //f->dados[tam] = '\0';
+    }
+    f->checksum = calcula_checksum(f);
+    return frame_buffer; // Retorna o buffer alocado com o frame montado
+}
+
+// ==============================================================================================================================
+// ==============================================================================================================================
 
 int servidor_envia_arquivo(int sockfd, unsigned char seq, const char* file_path, struct sockaddr_ll* destino) {
 
@@ -174,7 +212,24 @@ int cliente_recebe_arquivo(int sockfd, const char* file_name, unsigned char seq)
 
 
         while (timestamp() - inicio <= TIMEOUT_MILLIS) { 
-            ssize_t n = recv(sockfd, &f, sizeof(f), 0);
+
+            unsigned char temp_buffer[2048];
+            ssize_t n = recv(sockfd, temp_buffer, sizeof(temp_buffer), 0);
+            
+            if (n < 0) { 
+                continue;
+            }
+
+            int tam_buffer = n;
+            remove_vlan(temp_buffer, &tam_buffer);
+            
+            Frame f;
+            // Como Frame é "packed", um memcpy é seguro se o tamanho corresponder.
+            if (tam_buffer < sizeof(Frame)) {
+                 memcpy(&f, temp_buffer, tam_buffer);
+            } else {
+                 memcpy(&f, temp_buffer, sizeof(Frame));
+            }
 
             if (n < 0) { 
                 continue;
@@ -226,7 +281,56 @@ int cliente_recebe_arquivo(int sockfd, const char* file_name, unsigned char seq)
     return success;
 }
 
-int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
+// ==============================================================================================================================
+// ==============================================================================================================================
+
+void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct sockaddr_ll* origem, unsigned char *msg) {
+
+    unsigned char* resposta;
+    int tam;
+
+    if (msg == NULL) {
+        tam = 0;
+        resposta = monta_frame(seq, tipo, NULL, tam);
+    }
+    else {
+        tam = strlen((char*)msg);
+        resposta = monta_frame(seq, tipo, msg, tam);
+    }
+
+    int tam_original = FRAME_HEADER_SIZE + ((Frame*)resposta)->tamanho;
+    
+    unsigned char send_buffer[2048];
+    memcpy(send_buffer, resposta, tam_original); // Copia o frame original
+
+    int tamanho_para_enviar = tam_original;
+    insere_vlan(send_buffer, sizeof(send_buffer), &tamanho_para_enviar);
+
+    size_t bytes_to_send = tamanho_para_enviar; // Atualiza o tamanho após a inserção do VLAN
+    int bytes_sent;
+
+    if (bytes_to_send < MIN_ETH_PAYLOAD_SIZE) {   // Se o tamanho do frame for menor que o mínimo, preenche com zeros
+
+        unsigned char padded_buffer[MIN_ETH_PAYLOAD_SIZE] = {0};
+        memcpy(padded_buffer, send_buffer, bytes_to_send);
+
+        if (origem != NULL) {
+            bytes_sent = sendto(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0, (struct sockaddr*)origem, sizeof(struct sockaddr_ll));
+        } else {
+            bytes_sent = send(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0);
+        }
+    } else {            // Se o tamanho do frame for maior ou igual ao mínimo, envia normalmente
+        if (origem != NULL) {
+            bytes_sent = sendto(sockfd, send_buffer, bytes_to_send, 0, (struct sockaddr*)origem, sizeof(struct sockaddr_ll));
+        } else {
+            bytes_sent = send(sockfd, send_buffer, bytes_to_send, 0);
+        }
+    }
+    free(resposta);
+
+}
+
+int espera_resposta(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
    
     Frame resposta;
 
@@ -237,7 +341,24 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
     long long inicio = timestamp();
 
     while (timestamp() - inicio <= timeoutMillis) {
-        ssize_t n = recv(sockfd, &resposta, sizeof(resposta), 0);
+
+        unsigned char temp_buffer[2048];
+        ssize_t n = recv(sockfd, temp_buffer, sizeof(temp_buffer), 0);
+        
+        if (n <= 0) {
+            continue; // Continua esperando até o timeout
+        }
+
+        int tam_buffer = n;
+        remove_vlan(temp_buffer, &tam_buffer);
+        
+        Frame resposta;
+        if (tam_buffer < sizeof(Frame)) {
+            memcpy(&resposta, temp_buffer, tam_buffer);
+        } else {
+            memcpy(&resposta, temp_buffer, sizeof(Frame));
+        }
+
         if (n > 0 && resposta.marcador == MARCADOR) {
             printf("[Cliente/Servidor] Recebido %zd bytes\n", n);
             printf("[Cliente/Servidor] Dados recebidos: ");
@@ -278,24 +399,37 @@ int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
     }
 }
 
+// ==============================================================================================================================
+// ==============================================================================================================================
+
 int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam, int modo_servidor, struct sockaddr_ll* destino) {
+
     int timeout = TIMEOUT_MILLIS;
     int tentativas = 0;
     int ack = 0;
 
-    Frame f;
-    monta_frame(&f, seq, tipo, dados, tam);
+    //Frame f;
+    unsigned char *f = monta_frame(seq, tipo, dados, tam);
+    size_t bytes_to_send = FRAME_HEADER_SIZE + tam;
+    printf("[Cliente DEBUG] Enviando %zu bytes. Marcador no buffer: 0x%02X\n", bytes_to_send, f[0]);
 
     while (tentativas < MAX_RETRANSMISSIONS && !ack) {
         int bytes;
-        size_t bytes_to_send = FRAME_HEADER_SIZE + f.tamanho;
+        int tam_original = FRAME_HEADER_SIZE + ((Frame*)f)->tamanho;
+        
+        unsigned char send_buffer[2048];
+        memcpy(send_buffer, f, tam_original);
+
+        int tamanho_para_enviar = tam_original;
+        insere_vlan(send_buffer, sizeof(send_buffer), &tamanho_para_enviar);
+        bytes_to_send = tamanho_para_enviar; // Atualiza o tamanho após a inserção do VLAN
 
         if (bytes_to_send < MIN_ETH_PAYLOAD_SIZE) {         // Se o tamanho do frame for menor que o mínimo, preenche com zeros
             unsigned char padded_buffer[MIN_ETH_PAYLOAD_SIZE] = {0};
-            memcpy(padded_buffer, &f, bytes_to_send);
+            memcpy(padded_buffer, send_buffer, bytes_to_send);
             bytes = sendto(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0, (struct sockaddr*)destino, sizeof(struct sockaddr_ll));
         } else {                                            // Se o tamanho do frame for maior ou igual ao mínimo, envia normalmente
-            bytes = sendto(sockfd, &f, bytes_to_send, 0, (struct sockaddr*)destino, sizeof(struct sockaddr_ll));
+            bytes = sendto(sockfd, send_buffer, bytes_to_send, 0, (struct sockaddr*)destino, sizeof(struct sockaddr_ll));
         }
 
         if (bytes < 0) {
@@ -304,7 +438,7 @@ int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned c
             printf("[%s] Frame enviado (seq=%u, tipo=%u)\n", modo_servidor ? "Servidor" : "Cliente", seq, tipo);
         }
 
-        int resultado = espera_ack(sockfd, seq, timeout);
+        int resultado = espera_resposta(sockfd, seq, timeout);
 
         if (resultado == 1) { // ACK recebido
             return 1;
@@ -330,7 +464,7 @@ int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned c
     if (!ack) {
         printf("[%s] Falha após %d tentativas no seq=%u\n", modo_servidor ? "Servidor" : "Cliente", MAX_RETRANSMISSIONS, seq);
     }
-
+    free(f);
     return 0; // Falha ao enviar a mensagem após o número máximo de tentativas
 
 }
@@ -343,46 +477,48 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
         struct sockaddr_ll addr;
         socklen_t addrlen = sizeof(addr);
         ssize_t bytes = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&addr, &addrlen);
+        int tam_buffer = bytes;
+        remove_vlan(buffer, &tam_buffer);
         if (bytes < 5) continue;                                                            // Verifica se o tamanho mínimo do frame é atendido
-
+        printf("[Servidor DEBUG 1] Recebidos %zd bytes.\n", bytes);
         for (ssize_t i = 0; i < bytes - 4;) {                                               // Percorre o buffer procurando por frames válidos
-
+            printf("[Servidor DEBUG 2] Verificando byte %zd do buffer...\n", i);
             if (buffer[i] == MARCADOR) {                                                    // Verifica se o marcador é válido
-
+                printf("[Servidor DEBUG 3] MARCADOR (0x7E) encontrado!\n");
                 Frame f;
-                memcpy(&f, &buffer[i], FRAME_HEADER_SIZE); // 1. Copia o cabeçalho para ler o tamanho
+                memcpy(&f, &buffer[i], FRAME_HEADER_SIZE);
 
                 size_t tamanho_declarado_dados = f.tamanho;
                 size_t tamanho_total_frame = FRAME_HEADER_SIZE + tamanho_declarado_dados;
 
-                // 2. Verifica se o buffer realmente contém o frame inteiro
+                // Verifica se o buffer realmente contém o frame inteiro
                 if (i + tamanho_total_frame > bytes) {
-                    // Frame incompleto, não podemos processar. Avança para o próximo byte.
+                    // Frame incompleto, não podemos processar, avança para o próximo byte
                     i++;
                     continue;
                 }
 
-                // 3. Se houver dados, copia a parte dos dados
+                // Se houver dados, copia a parte dos dados
                 if (tamanho_declarado_dados > 0) {
                     memcpy(f.dados, &buffer[i + FRAME_HEADER_SIZE], tamanho_declarado_dados);
                 }
 
-                // A struct 'f' agora está montada de forma segura e completa.
+                // A struct 'f' agora está montada
                 unsigned char esperado = calcula_checksum(&f);
-
+                printf("[Servidor DEBUG 4] Checksum: recebido=0x%02X, calculado=0x%02X\n", f.checksum, esperado);
                 if (f.checksum != esperado) {                                              // Verifica se o checksum é válido
                     printf("[%s] Checksum inválido seq=%u\n", modo_servidor ? "Servidor" : "Cliente", f.seq);
                     envia_resposta(sockfd, f.seq, 1, &addr, NULL); // Envia NACK
                     i++;
                     continue;
                 }
+                printf("[Servidor DEBUG 6] Checksum VÁLIDO. Processando tipo %u\n", f.tipo);
                 int is_duplicate = 0;
                 if (f.tipo >= 10 && f.tipo <= 13 && f.seq == last_seq) {
                     is_duplicate = 1;
                     printf("[Servidor] Duplicado de movimento recebido (seq=%u).\n", f.seq);
                 }
 
-                //unsigned char tipo = f->tipo & 0x0F;                                        // Extrai o tipo do frame
                 unsigned char tipo = f.tipo;
 
                 if (modo_servidor) {
