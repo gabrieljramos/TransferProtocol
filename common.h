@@ -34,7 +34,7 @@ typedef struct {
 } __attribute__((packed)) Frame;
 
 long long timestamp();
-int cria_raw_socket(const char *interface);
+int cria_raw_socket(char* nome_interface_rede);
 unsigned char calcula_checksum(Frame *f);
 //void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam);
 unsigned char* monta_frame(unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam);

@@ -8,7 +8,6 @@
 
 unsigned char *extensoes[] = {".txt", ".mp4", ".jpg"};
 
-int steps_taken = 0;
 int treasures_found = 0;
 int last_seq = -1;
 
@@ -18,35 +17,38 @@ long long timestamp() {
     return tp.tv_sec * 1000LL + tp.tv_usec / 1000;
 }
 
-int cria_raw_socket(const char *interface) {
-    int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-    if (sockfd < 0) {
-        perror("socket");
-        exit(EXIT_FAILURE);
+int cria_raw_socket(char* nome_interface_rede) {
+    nome_interface_rede = "enp7s0f0";
+    // Cria arquivo para o socket sem qualquer protocolo
+    int soquete = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+    if (soquete == -1) {
+        fprintf(stderr, "Erro ao criar socket: Verifique se você é root!\n");
+        exit(-1);
     }
-
-    struct ifreq ifr;
-    memset(&ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, interface, IFNAMSIZ - 1);
-
-    if (ioctl(sockfd, SIOCGIFINDEX, &ifr) == -1) {
-        perror("ioctl");
-        close(sockfd);
-        exit(EXIT_FAILURE);
+ 
+    int ifindex = if_nametoindex(nome_interface_rede);
+ 
+    struct sockaddr_ll endereco = {0};
+    endereco.sll_family = AF_PACKET;
+    endereco.sll_protocol = htons(ETH_P_ALL);
+    endereco.sll_ifindex = ifindex;
+    // Inicializa socket
+    if (bind(soquete, (struct sockaddr*) &endereco, sizeof(endereco)) == -1) {
+        fprintf(stderr, "Erro ao fazer bind no socket\n");
+        exit(-1);
     }
-
-    struct sockaddr_ll sa = {0};
-    sa.sll_family = AF_PACKET;
-    sa.sll_protocol = htons(ETH_P_ALL);
-    sa.sll_ifindex = ifr.ifr_ifindex;
-
-    if (bind(sockfd, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
-        perror("bind");
-        close(sockfd);
-        exit(EXIT_FAILURE);
+ 
+    struct packet_mreq mr = {0};
+    mr.mr_ifindex = ifindex;
+    mr.mr_type = PACKET_MR_PROMISC;
+    // Não joga fora o que identifica como lixo: Modo promíscuo
+    if (setsockopt(soquete, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) == -1) {
+        fprintf(stderr, "Erro ao fazer setsockopt: "
+            "Verifique se a interface de rede foi especificada corretamente.\n");
+        exit(-1);
     }
-
-    return sockfd;
+ 
+    return soquete;
 }
 
 // ==============================================================================================================================
@@ -314,6 +316,8 @@ void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct so
         unsigned char padded_buffer[MIN_ETH_PAYLOAD_SIZE] = {0};
         memcpy(padded_buffer, send_buffer, bytes_to_send);
 
+        printf("Enviando resposta\n");
+
         if (origem != NULL) {
             bytes_sent = sendto(sockfd, padded_buffer, MIN_ETH_PAYLOAD_SIZE, 0, (struct sockaddr*)origem, sizeof(struct sockaddr_ll));
         } else {
@@ -470,17 +474,22 @@ int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned c
 }
 
 void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* current_pos, struct sockaddr_ll* cliente_addr) {
+
     unsigned char buffer[2048];
+    int steps_taken = 0;
 
     while (1) {
 
         struct sockaddr_ll addr;
         socklen_t addrlen = sizeof(addr);
         ssize_t bytes = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&addr, &addrlen);
+        printf("[Servidor DEBUG 1] Recebidos %zd bytes.\n", bytes);
+        printf("Buffer: %s\n", (char*) buffer);
         int tam_buffer = bytes;
         remove_vlan(buffer, &tam_buffer);
-        if (bytes < 5) continue;                                                            // Verifica se o tamanho mínimo do frame é atendido
-        printf("[Servidor DEBUG 1] Recebidos %zd bytes.\n", bytes);
+        if (bytes < 5) 
+            continue;                                                                       // Verifica se o tamanho mínimo do frame é atendido
+        //printf("[Servidor DEBUG 1] Recebidos %zd bytes.\n", bytes);
         for (ssize_t i = 0; i < bytes - 4;) {                                               // Percorre o buffer procurando por frames válidos
             printf("[Servidor DEBUG 2] Verificando byte %zd do buffer...\n", i);
             if (buffer[i] == MARCADOR) {                                                    // Verifica se o marcador é válido
@@ -535,6 +544,7 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     }
 
                     if (tipo == 14) {                                                       // Tipo 14 = Jogo em andamento
+                        printf("Steps Taken = %d\n", steps_taken);
                         if (steps_taken > 0) {                                              // Se já houver passos dados, não permite iniciar o jogo
                             printf("[Servidor] Jogo ja iniciado, reiniciando...\n");
                             unsigned char error_code[2] = {'3', '\0'};
@@ -554,9 +564,11 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                         else if (tipo == 13) update_y('-', current_pos);
                         else if (tipo == 10) update_y('+', current_pos);
 
-                        add_move(current_pos);                                                  // Adiciona o movimento à lista de movimentos
-                        steps_taken++;
-                        last_seq = f.seq;
+                        if (tipo >= 10 && tipo <= 13) {
+                            add_move(current_pos);                                                  // Adiciona o movimento à lista de movimentos
+                            steps_taken++;
+                            last_seq = f.seq;
+                        }
                     }
 
                     int tesouro = treasure_found(tesouros, current_pos->x, current_pos->y); // Verifica se um tesouro foi encontrado

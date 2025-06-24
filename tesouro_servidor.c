@@ -2,10 +2,10 @@
 
 int main(int argc, char* argv[]) {
 
-    if (argc < 2) {
+   /* if (argc < 2) {
         printf("Uso: %s <interface>\n", argv[0]);
         return 1;
-    }
+    }*/
 
     tes_t* tesouros = (tes_t*) malloc(sizeof(tes_t) * 8);                   // Aloca memória para 8 tesouros
     tesouros = game_start();                                                // Inicia o jogo e obtém a lista de tesouros
@@ -20,8 +20,15 @@ int main(int argc, char* argv[]) {
     current_pos.x = 7;
     current_pos.y = 0;
 
-    const char* interface = argv[1];
+    char* interface = argv[1];
     int sockfd = cria_raw_socket(interface);                                // Cria um raw_socket para a interface especificada
+
+
+    /*unsigned char buffer[1024];
+    while (1) {
+        int n = recv(sockfd, buffer, sizeof(buffer),0);
+        printf("Tam recebido %d msg: %s\n", n, (char*) buffer);
+    }*/
 
     escuta_mensagem(sockfd, 1, tesouros, &current_pos, NULL);               // Escuta mensagens do cliente
     close(sockfd);      
