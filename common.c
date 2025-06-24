@@ -116,6 +116,18 @@ unsigned char calcula_checksum(Frame *f) {
     return sum;
 }
 
+unsigned char calcula_checksum_manual(const unsigned char *buffer, size_t tam) {
+    unsigned char sum = 0;
+    // Sum the two bytes containing tipo, seq, and tamanho
+    sum += buffer[1];
+    sum += buffer[2];
+    // Sum the data payload, which starts at index 4
+    for (size_t i = 0; i < tam; ++i) {
+        sum += buffer[4 + i];
+    }
+    return sum;
+}
+
 // ==============================================================================================================================
 // ==============================================================================================================================
 
@@ -139,23 +151,36 @@ int find_file(int file_num, unsigned char *file_name, size_t name_size, unsigned
 // ==============================================================================================================================
 
 unsigned char* monta_frame(unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam) {
+    size_t data_size = tam;
 
-    unsigned char *frame_buffer = (unsigned char*) malloc(sizeof(Frame));
-    Frame *f = (Frame*) frame_buffer;
-    f->marcador = MARCADOR;
-    f->seq = seq & 0x1F;
-    f->tipo = tipo & 0X0F;
-    if (tipo == 0 || tipo == 1 || tipo == 2 || tipo == 3 || tipo == 14 || (tipo >= 10 && tipo <= 13)) { //Tipos que nao possuem dados
-        f->tamanho = 0;
-        memset(f->dados, 0, sizeof(f->dados));
-    } else { //Caso tam > 127 trunca tam
-        if (tam > 127) tam = 127;
-        f->tamanho = tam;
-        memcpy(f->dados, dados, tam);
-        //f->dados[tam] = '\0';
+    if (tipo == 0 || tipo == 1 || tipo == 2 || tipo == 3 || tipo == 14 || (tipo >= 10 && tipo <= 13)) {
+        data_size = 0;
+    } else {
+        if (data_size > 127) {
+            data_size = 127;
+        }
     }
-    f->checksum = calcula_checksum(f);
-    return frame_buffer; // Retorna o buffer alocado com o frame montado
+
+
+    unsigned char *frame_buffer = (unsigned char*) malloc(4 + data_size);
+    if (!frame_buffer) {
+        perror("Malloc monta_frame");
+        return NULL;
+    }
+    frame_buffer[0] = MARCADOR;
+    frame_buffer[1] = ((tipo & 0x0F) << 4) | ((seq >> 1) & 0x0F);
+    frame_buffer[2] = ((seq & 0x01) << 7) | (data_size & 0x7F);
+
+    frame_buffer[3] = 0;
+
+
+    if (data_size > 0 && dados != NULL) {
+        memcpy(&frame_buffer[4], dados, data_size);
+    }
+
+    frame_buffer[3] = calcula_checksum_manual(frame_buffer, data_size);
+
+    return frame_buffer; 
 }
 
 // ==============================================================================================================================
@@ -191,7 +216,7 @@ int servidor_envia_arquivo(int sockfd, unsigned char seq, const char* file_path,
 
 }
 
-int cliente_recebe_arquivo(int sockfd, const char* file_name, unsigned char seq) {
+/*int cliente_recebe_arquivo(int sockfd, const char* file_name, unsigned char seq, struct sockaddr_ll* server_addr) {
 
     FILE *fp = fopen(file_name, "wb");
     if (!fp) {
@@ -222,14 +247,6 @@ int cliente_recebe_arquivo(int sockfd, const char* file_name, unsigned char seq)
 
             int tam_buffer = n;
             remove_vlan(temp_buffer, &tam_buffer);
-            
-            Frame f;
-            // Como Frame é "packed", um memcpy é seguro se o tamanho corresponder.
-            if (tam_buffer < sizeof(Frame)) {
-                 memcpy(&f, temp_buffer, tam_buffer);
-            } else {
-                 memcpy(&f, temp_buffer, sizeof(Frame));
-            }
 
             if (n < 0) { 
                 continue;
@@ -238,25 +255,46 @@ int cliente_recebe_arquivo(int sockfd, const char* file_name, unsigned char seq)
             if (n < 5 || f.marcador != MARCADOR) {
                 continue;
             }
-            
-            if (f.seq == seq) {
-                if (f.tipo == 5) { // Data chunk
-                    fwrite(f.dados, 1, f.tamanho, fp);
-                    envia_resposta(sockfd, seq, 0, NULL, NULL);
-                    printf("[Cliente] Bloco recebido seq=%u, tam=%u. ACK Enviado.\n", seq, f.tamanho);
-                    seq = (seq + 1) % 32;
-                    chunk_received = 1;
-                    break; 
-                } else if (f.tipo == 9) { 
-                    envia_resposta(sockfd, seq, 0, NULL, NULL);
-                    printf("[Cliente] Recebido marcador de Fim de Arquivo seq=%u. Transferencia completa.\n", seq);
-                    chunk_received = 1;
-                    success = 1; 
-                    break;
-                }
-            }
-        } 
 
+            if (tam_buffer >= 4 && temp_buffer[0] == MARCADOR) {
+                // --- Manual Unpacking ---
+                unsigned char tipo = (temp_buffer[1] >> 4) & 0x0F;
+                unsigned char seq = ((temp_buffer[1] & 0x0F) << 1) | ((temp_buffer[2] >> 7) & 0x01);
+                unsigned char tam = temp_buffer[2] & 0x7F;
+                unsigned char checksum_recebido = temp_buffer[3];
+                unsigned char* dados = &temp_buffer[4];
+
+                Frame f;
+                f.tipo = tipo;
+                f.seq = seq;
+                f.tamanho = tam;
+                memcpy(f.dados, &temp_buffer[4], tam);
+
+                // --- Verify Checksum ---
+                unsigned char checksum_calculado = calcula_checksum_manual(temp_buffer, tam);
+                if (checksum_recebido != checksum_calculado) {
+                    printf("[Cliente] Checksum inválido no bloco de arquivo seq=%u.\n", seq);
+                    continue;
+                }
+            
+                if (f.seq == seq) {
+                    if (f.tipo == 5) { // Data chunk
+                        fwrite(f.dados, 1, f.tamanho, fp);
+                        envia_resposta(sockfd, seq, 0, server_addr, NULL);
+                        printf("[Cliente] Bloco recebido seq=%u, tam=%u. ACK Enviado.\n", seq, f.tamanho);
+                        seq = (seq + 1) % 32;
+                        chunk_received = 1;
+                        break; 
+                    } else if (f.tipo == 9) { 
+                        envia_resposta(sockfd, seq, 0, server_addr, NULL);
+                        printf("[Cliente] Recebido marcador de Fim de Arquivo seq=%u. Transferencia completa.\n", seq);
+                        chunk_received = 1;
+                        success = 1; 
+                        break;
+                    }
+                }
+            } 
+        }
         if (!chunk_received) {
             printf("[Cliente] Timeout esperando pelo bloco de arquivo com seq=%u. Abortando.\n", seq);
             success = 0;
@@ -279,6 +317,80 @@ int cliente_recebe_arquivo(int sockfd, const char* file_name, unsigned char seq)
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&sock_timeout, sizeof(sock_timeout));
     
     return success;
+}*/
+
+int cliente_recebe_arquivo(int sockfd, const char* file_name, unsigned char seq_esperado, struct sockaddr_ll* server_addr) {
+    FILE *fp = fopen(file_name, "wb");
+    if (!fp) {
+        perror("[Cliente] Falha ao criar arquivo para recebimento");
+        return 0;
+    }
+
+    printf("[Cliente] Pronto para receber dados do arquivo: %s. Esperando seq=%u\n", file_name, seq_esperado);
+
+    struct timeval sock_timeout = { .tv_sec = 1, .tv_usec = 0 };
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&sock_timeout, sizeof(sock_timeout));
+
+    int tentativas = 0;
+    while (tentativas < MAX_RETRANSMISSIONS) {
+        unsigned char temp_buffer[2048];
+        ssize_t n = recv(sockfd, temp_buffer, sizeof(temp_buffer), 0);
+
+        if (n < 0) {
+            printf("[Cliente] Tentativa %d: Timeout no recv, esperando novamente.\n", tentativas + 1);
+            tentativas++;
+            continue;
+        }
+
+        int tam_buffer = n;
+        remove_vlan(temp_buffer, &tam_buffer);
+        
+        int frame_processed = 0;
+        for (ssize_t i = 0; i <= tam_buffer - 4; ++i) {
+            if (temp_buffer[i] == MARCADOR) {
+                unsigned char tipo = (temp_buffer[i+1] >> 4) & 0x0F;
+                unsigned char seq = ((temp_buffer[i+1] & 0x0F) << 1) | ((temp_buffer[i+2] >> 7) & 0x01);
+                unsigned char tam = temp_buffer[i+2] & 0x7F;
+                unsigned char checksum_recebido = temp_buffer[i+3];
+                unsigned char* dados = &temp_buffer[i+4];
+
+                unsigned char checksum_calculado = calcula_checksum_manual(&temp_buffer[i], tam);
+                if (checksum_recebido != checksum_calculado) {
+                    continue;
+                }
+
+                if (seq == seq_esperado) {
+                    if (tipo == 5) { // Dados do arq
+                        fwrite(dados, 1, tam, fp);
+                        envia_resposta(sockfd, seq, 0, server_addr, NULL);
+                        printf("[Cliente] Bloco recebido seq=%u, tam=%u. ACK Enviado.\n", seq, tam);
+                        seq_esperado = (seq_esperado + 1) % 32;
+                        tentativas = 0; 
+                        frame_processed = 1;
+                    } else if (tipo == 9) { // EOF
+                        envia_resposta(sockfd, seq, 0, server_addr, NULL);
+                        printf("[Cliente] Recebido marcador de Fim de Arquivo seq=%u. Transferencia completa.\n", seq);
+                        fclose(fp);
+                        sock_timeout.tv_sec = 0; sock_timeout.tv_usec = 0;
+                        setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&sock_timeout, sizeof(sock_timeout));
+                        return 1;
+                    }
+                }
+                i += 4 + tam - 1;
+            }
+        }
+        if (!frame_processed) {
+            tentativas++;
+        }
+    }
+
+    // If we exit the loop, we've failed
+    printf("[Cliente] Falha ao receber bloco de arquivo após %d tentativas. Abortando.\n", MAX_RETRANSMISSIONS);
+    fclose(fp);
+    remove(file_name);
+    sock_timeout.tv_sec = 0; sock_timeout.tv_usec = 0;
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&sock_timeout, sizeof(sock_timeout));
+    return 0; // FAILURE
 }
 
 // ==============================================================================================================================
@@ -298,7 +410,11 @@ void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct so
         resposta = monta_frame(seq, tipo, msg, tam);
     }
 
-    int tam_original = FRAME_HEADER_SIZE + ((Frame*)resposta)->tamanho;
+    size_t data_size = tam;
+    if (msg == NULL) {
+        data_size = 0;
+    }
+    int tam_original = 4 + data_size;
     
     unsigned char send_buffer[2048];
     memcpy(send_buffer, resposta, tam_original); // Copia o frame original
@@ -331,72 +447,54 @@ void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct so
 }
 
 int espera_resposta(int sockfd, unsigned char seq_esperado, int timeoutMillis) {
-   
-    Frame resposta;
 
-    //Define timeout
     struct timeval timeout = { .tv_sec = timeoutMillis / 1000, .tv_usec = (timeoutMillis % 1000) * 1000 };
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
 
     long long inicio = timestamp();
 
     while (timestamp() - inicio <= timeoutMillis) {
-
         unsigned char temp_buffer[2048];
         ssize_t n = recv(sockfd, temp_buffer, sizeof(temp_buffer), 0);
         
         if (n <= 0) {
-            continue; // Continua esperando até o timeout
+            continue;
         }
 
         int tam_buffer = n;
         remove_vlan(temp_buffer, &tam_buffer);
         
-        Frame resposta;
-        if (tam_buffer < sizeof(Frame)) {
-            memcpy(&resposta, temp_buffer, tam_buffer);
-        } else {
-            memcpy(&resposta, temp_buffer, sizeof(Frame));
-        }
+        for (ssize_t i = 0; i <= tam_buffer - 4; ++i) {
+            if (temp_buffer[i] == MARCADOR) {
 
-        if (n > 0 && resposta.marcador == MARCADOR) {
-            printf("[Cliente/Servidor] Recebido %zd bytes\n", n);
-            printf("[Cliente/Servidor] Dados recebidos: ");
-            for (int i = 0; i < n; i++) printf("%02X ", ((unsigned char*)&resposta)[i]);
-            printf("\n");
+                unsigned char tipo = (temp_buffer[i+1] >> 4) & 0x0F;
+                unsigned char seq = ((temp_buffer[i+1] & 0x0F) << 1) | ((temp_buffer[i+2] >> 7) & 0x01);
+                unsigned char tam = temp_buffer[i+2] & 0x7F;
+                unsigned char checksum_recebido = temp_buffer[i+3];
 
-            if (resposta.tipo == 0 && resposta.seq == seq_esperado) { //ACK
-                printf("[Cliente/Servidor] ACK recebido para seq=%u\n", seq_esperado);
-                return 1;
-            } else if (resposta.tipo == 1 && resposta.seq == seq_esperado) { //NACK
-                printf("[Cliente/Servidor] NACK recebido para seq=%u\n", seq_esperado);
-                return -1;
-            } else if (resposta.tipo == 2 && resposta.seq == seq_esperado) { // OK + ACK
-                printf("[Cliente] Tesouro recebido para seq=%u\n", seq_esperado);
-                return 2;
-            } else if (resposta.tipo == 15 && resposta.seq == seq_esperado) { // ERRO
-                if (strcmp((char*)resposta.dados, "0") == 0) {              // Erro de permissao
-                    printf("[Cliente] Sem permissao de leitura\n");
-                    return 3;
+                unsigned char checksum_calculado = calcula_checksum_manual(&temp_buffer[i], tam);
+
+                if (checksum_recebido != checksum_calculado) {
+                    continue; 
                 }
-                else if (strcmp((char*)resposta.dados, "1") == 0) {              // Erro de espaço insuficiente
-                    printf("[Servidor] Espaco insuficiente para o arquivo\n");
-                    return 4;
+
+                if (seq == seq_esperado) {
+                    if (tipo == 0) return 1;    // ACK
+                    if (tipo == 1) return -1;   // NACK
+                    if (tipo == 2) return 2;    // OK + ACK (Treasure)
+                    if (tipo == 15) {           // ERROR
+                        if (strcmp((char*)&temp_buffer[i+4], "0") == 0) return 3; // Permissao
+                        if (strcmp((char*)&temp_buffer[i+4], "1") == 0) return 4; // Espaço
+                        if (strcmp((char*)&temp_buffer[i+4], "3") == 0) return 5; // Jogo iniciado
+                    }
                 }
-                else if (strcmp((char*)resposta.dados, "3") == 0) {         // Erro de jogo já iniciado
-                    printf("[Cliente] Jogo ja iniciado, reiniciando...\n");
-                    return 5;
-                }
+                i += 4 + tam -1;
             }
-            else {
-                printf("[Cliente/Servidor] Frame ignorado (tipo=%u, seq=%u)\n", resposta.tipo, resposta.seq);
-                continue;
-            }
-        } else {
-            printf("[Cliente/Servidor] Timeout esperando ACK/NACK para seq=%u\n", seq_esperado);
-            return 0;
         }
     }
+    
+    printf("[Cliente/Servidor] Timeout esperando ACK/NACK para seq=%u\n", seq_esperado);
+    return 0;
 }
 
 // ==============================================================================================================================
@@ -410,19 +508,28 @@ int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned c
 
     //Frame f;
     unsigned char *f = monta_frame(seq, tipo, dados, tam);
-    size_t bytes_to_send = FRAME_HEADER_SIZE + tam;
-    printf("[Cliente DEBUG] Enviando %zu bytes. Marcador no buffer: 0x%02X\n", bytes_to_send, f[0]);
+
+    size_t data_size = tam;
+    // Recalculate the actual data size based on the type, just like in monta_frame
+    if (tipo == 0 || tipo == 1 || tipo == 2 || tipo == 3 || tipo == 14 || (tipo >= 10 && tipo <= 13)) {
+        data_size = 0;
+    } else {
+        if (data_size > 127) data_size = 127;
+    }
+    
+    // The correct size is always the manual header size (4) plus the actual data_size
+    int tam_original = 4 + data_size;
+    printf("[Cliente DEBUG] Enviando %d bytes. Marcador no buffer: 0x%02X\n", tam_original, f[0]);
 
     while (tentativas < MAX_RETRANSMISSIONS && !ack) {
         int bytes;
-        int tam_original = FRAME_HEADER_SIZE + ((Frame*)f)->tamanho;
         
         unsigned char send_buffer[2048];
         memcpy(send_buffer, f, tam_original);
 
         int tamanho_para_enviar = tam_original;
         insere_vlan(send_buffer, sizeof(send_buffer), &tamanho_para_enviar);
-        bytes_to_send = tamanho_para_enviar; // Atualiza o tamanho após a inserção do VLAN
+        int bytes_to_send = tamanho_para_enviar; // Atualiza o tamanho após a inserção do VLAN
 
         if (bytes_to_send < MIN_ETH_PAYLOAD_SIZE) {         // Se o tamanho do frame for menor que o mínimo, preenche com zeros
             unsigned char padded_buffer[MIN_ETH_PAYLOAD_SIZE] = {0};
@@ -485,33 +592,28 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
             printf("[Servidor DEBUG 2] Verificando byte %zd do buffer...\n", i);
             if (buffer[i] == MARCADOR) {                                                    // Verifica se o marcador é válido
                 printf("[Servidor DEBUG 3] MARCADOR (0x7E) encontrado!\n");
+
                 Frame f;
-                memcpy(&f, &buffer[i], FRAME_HEADER_SIZE);
 
-                size_t tamanho_declarado_dados = f.tamanho;
-                size_t tamanho_total_frame = FRAME_HEADER_SIZE + tamanho_declarado_dados;
+                unsigned char tipo = (buffer[i+1] >> 4) & 0x0F;
+                unsigned char seq = ((buffer[i+1] & 0x0F) << 1) | ((buffer[i+2] >> 7) & 0x01);
+                unsigned char tam = buffer[i+2] & 0x7F;
+                unsigned char checksum_recebido = buffer[i+3];
 
-                // Verifica se o buffer realmente contém o frame inteiro
-                if (i + tamanho_total_frame > bytes) {
-                    // Frame incompleto, não podemos processar, avança para o próximo byte
-                    i++;
-                    continue;
-                }
+                f.tipo = tipo;
+                f.seq = seq;
+                f.tamanho = tam;
+                memcpy(f.dados, &buffer[4], tam);
 
-                // Se houver dados, copia a parte dos dados
-                if (tamanho_declarado_dados > 0) {
-                    memcpy(f.dados, &buffer[i + FRAME_HEADER_SIZE], tamanho_declarado_dados);
-                }
+                unsigned char checksum_calculado = calcula_checksum_manual(&buffer[i], f.tamanho);
 
-                // A struct 'f' agora está montada
-                unsigned char esperado = calcula_checksum(&f);
-                printf("[Servidor DEBUG 4] Checksum: recebido=0x%02X, calculado=0x%02X\n", f.checksum, esperado);
-                if (f.checksum != esperado) {                                              // Verifica se o checksum é válido
+                if (checksum_recebido != checksum_calculado) {
                     printf("[%s] Checksum inválido seq=%u\n", modo_servidor ? "Servidor" : "Cliente", f.seq);
                     envia_resposta(sockfd, f.seq, 1, &addr, NULL); // Envia NACK
                     i++;
                     continue;
                 }
+                
                 printf("[Servidor DEBUG 6] Checksum VÁLIDO. Processando tipo %u\n", f.tipo);
                 int is_duplicate = 0;
                 if (f.tipo >= 10 && f.tipo <= 13 && f.seq == last_seq) {
@@ -519,12 +621,12 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     printf("[Servidor] Duplicado de movimento recebido (seq=%u).\n", f.seq);
                 }
 
-                unsigned char tipo = f.tipo;
+                //unsigned char tipo = f.tipo;
 
                 if (modo_servidor) {
 
                     if (tipo == 0 || tipo == 1 || tipo == 2) {                              // Ignora ACK, NACK ou OK+ACK
-                        i += FRAME_HEADER_SIZE + f.tamanho;
+                        i += 4 + f.tamanho;
                         continue;
                     }
 
@@ -580,7 +682,7 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                                 perror("[Servidor] Erro de permissão de acesso ao arquivo");
                                 unsigned char error_code[2] = {'0', '\0'};
                                 envia_resposta(sockfd, f.seq, 15, &addr, error_code);
-                                i += FRAME_HEADER_SIZE + f.tamanho;
+                                i += 4 + f.tamanho;
                                 continue;
 
                             }
@@ -613,7 +715,7 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                                 }
                             } else if (authorized == 4) { // Se o cliente não tem espaço suficiente
                                 printf("[Servidor] Cliente não tem espaço suficiente para o arquivo\n");
-                                i += FRAME_HEADER_SIZE + f.tamanho; // Vai p/ o próximo frame
+                                i += 4 + f.tamanho; // Vai p/ o próximo frame
                                 continue;
                             } else if (authorized == 0) { // Resposta não recebida, timeouts ou nacks excessivos
                                 printf("[Servidor] Resposta nao recebida\n");
@@ -644,10 +746,10 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                         snprintf((char*)file_name, sizeof(file_name), "%s%s", (char*)f.dados, (char*)extensoes[tipo - 6]);
                         printf("[Cliente] Nome do arquivo recebido: %s\n", file_name);
 
-                        envia_resposta(sockfd, f.seq, 0, NULL, NULL);
+                        envia_resposta(sockfd, f.seq, 0, &addr, NULL); // CORRECT
 
                         unsigned char next_seq = (f.seq + 1) % 32;
-                        if (cliente_recebe_arquivo(sockfd, (char*)file_name, next_seq)) {
+                        if (cliente_recebe_arquivo(sockfd, (char*)file_name, next_seq, &addr)) {
                             return;                                                                     // Arquivo recebido com sucesso
                         }
 
@@ -667,7 +769,7 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
 
                         if (livre >= margem) {
                             printf("[Cliente] Espaço suficiente (%lld bytes disponíveis)\n", livre);
-                            envia_resposta(sockfd, f.seq, 0, cliente_addr, NULL); // ACK
+                            envia_resposta(sockfd, f.seq, 0, &addr, NULL); // CORRECT
                         } else {
                             printf("[Cliente] Espaço insuficiente (%lld bytes livres)\n", livre);
                             unsigned char error_code[2] = {'1', '\0'};
@@ -686,7 +788,7 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
                     }
                 }
 
-                i += FRAME_HEADER_SIZE + f.tamanho;
+                i += 4 + f.tamanho;
             } else {
                 i++;
             }
