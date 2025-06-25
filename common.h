@@ -17,8 +17,8 @@
 
 #define MARCADOR 0x7E
 #define MAX_DADOS 127
-#define TIMEOUT_MILLIS 1000
-#define MAX_RETRANSMISSIONS 5
+#define TIMEOUT_MILLIS 2100
+#define MAX_RETRANSMISSIONS 10
 
 
 typedef struct {

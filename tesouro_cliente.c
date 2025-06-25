@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    const char *interface = argv[1];
+    char *interface = argv[1];
     int sockfd = cria_raw_socket(interface);                                // Cria um raw_socket para a interface especificada
 
     int seq = 0;                                                            // Inicializa a sequência de pacotes
