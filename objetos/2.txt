@@ -1,0 +1,913 @@
+121120
+SENSOR BAR POSITION (Posição da Barra de Sensores)
+Ajusta esta definição para a fazeres corresponder com a localização da Barra
+de Sensores colocada ABOVE (Em cima) ou BELOW (Em baixo) do ecrã da
+televisão. Depois de conluíres, confirma a tua selecção.
+SENSITIVITY (Sensibilidade)
+Utiliza esta definição para ajustares a sensibilidade da função do Ponteiro
+do Comando Remoto Wii Plus. Se sentires que esta função não funciona como
+deveria, terás de ajustá-la.
+Depois de seleccionares SENSITIVITY (Sensibilidade) no Ecrã de Configuração
+da Barra de Sensores, visualizarás um Ecrã de Explicação com informações
+detalhadas acerca desta definição. Selecciona OK para começares o teste de
+ajustes.
+Durante o teste, utiliza o Ponteiro para moveres um cursor que se encontra no campo de texto. Se vires
+dois pontos a piscar, a configuração de Sensibilidade actual está a funcionar bem. Se não vires dois pontos
+a piscar, ajusta a Sensibilidade com os Botões + e – até os visualizares. De seguida, prime o Botão A para
+confirmares a tua nova configuração.
+• Se vires três ou mais pontos, o Comando Remoto Wii Plus poderá estar a detectar uma fonte de luz
+adicional.
+Consulta a secção de resolução de problemas relativos ao Comando Remoto Wii Plus, páginas77 – 79,do Manual
+de Operação da Wii – Configuração do Sistema.
+NOTA: A distância inicial recomendada para utilizar o Ponteiro é de 1,0 – 3,0 m da Barra de Sensores. Se
+aumentares a configuração da Sensibilidade, aumentará a distância na qual poderás utilizar o Ponteiro. Tem
+também em consideração que a influência da luz solar e de outras fontes de luz pode reduzir a acção do
+Ponteiro.
+Barra de Sensores
+Quando posicionares a Barra de Sensores, podes ter de ajustar duas configurações. Selecciona SENSOR BAR
+POSITION (Posição da Barra de Sensores) ou SENSITIVITY (Sensibilidade) e segue as seguintes instruções.
+Internet
+Provavelmente, pretendes configurar a Internet da Wii, para que esta funcione bem com a Internet em
+casa, quer possuas uma ligação à Internet de banda larga sem fios ou uma ligação LAN com fios.
+NOTA: Quando ligares a Wii à Internet, o Sistema Wii e/ou os Canais poderão ser, por vezes, actualizados
+automaticamente.
+Quando seleccionares INTERNET a partir do Ecrã de Definições da Wii, irás directamente para o Ecrã de
+Configuração da Internet. Antes de continuares com a selecção da configuração, consulta o seguinte
+fluxograma para decidires que definições e equipamento se adeqúam melhor à tua ligação à Internet.
+Sim Sim
+Sim
+Não Não
+Ainda não podes ligar a Wii à
+Internet. Verifica o que necessitas.
+(Ver as páginas 122 – 123)
+Tens uma ligação de alta velocida-
+de (banda larga) à Internet, nomea
+damente via cabo ou DSL?
+O teu ambiente é um ambiente de
+rede SEM FIOS?
+Deves utilizar a Configuração
+da Internet para procurares o teu
+ponto de acesso sem fios. (Ver a
+página 125; ponto de acesso AOSS,
+ver a página 126)
+Se possuis uma rede de área local
+(LAN) de alta velocida de com fios,
+em vez de uma rede sem fios, podes
+ligar a Wii directamente à tua LAN
+com fios com um Adaptador LAN
+da Wii (ver a página 123)
+Podes ligar facilmente a Wii, se ad-
+quirires o cabo Nintendo Wi-Fi USB
+Connector (vendido separadamente)
+e utilizares a Configuração da
+Internet para o ligar. (Ver as páginas
+123 – 124)
+Tens um PC que executa o
+Windows® XP ou Windows Vista®
+directamente ligado à Internet de
+alta velocidade?
+123122
+O que precisas para um Ambiente Sem Fios
+1. Consola Wii
+3. Os três métodos que se seguem oferecem a forma mais fácil e rápida de criares um ambiente de rede
+sem fios para ligação da Wii.
+2. Ligação à Internet de Banda Larga
+Existem várias formas de obter uma
+ligação à Internet de banda larga em
+tua casa.
+As mais comuns são Cabo, DSL eredes
+de fibra óptica. Informa-te junto do teu
+fornecedor de serviços de banda larga
+para obteres mais informações.
+NOTA: A utilização dos Serviços de Rede da Wii está sujeita à aceitação prévia dos Acordos de Serviços
+Wii, Política de Privacidade dos Serviços de Rede Wii e Código de Conduta da Wii. Podes consultar
+cópias das versões actualizadas destes termos em http://wii.nintendo-europe.com/terms.
+O que precisas para uma Rede Com Fios
+1. Consola Wii 2. Ligação à Internet de Banda Larga
+Existem várias formas de obteres uma
+ligação à Internet de banda larga em tua
+casa. As mais comuns são Cabo, DSL e
+redes de fibra óptica. Informa-te junto
+do teu fornecedor de serviços de banda
+larga para obteres mais informações.
+3. Adaptador LAN da Wii
+Se possuis uma rede de área local (LAN) com fios de alta velocidade, em vez de uma rede
+sem fios, podes ligar a Wii directamente à LAN com fios com um Adaptador LAN da Wii.
+(Vendido separadamente). Pode ser adquirido juntos dos representantes Nintendo ou
+encomendado através do site da Nintendo http://wiisupport.nintendo-europe.com).
+Consulta o manual do adaptador para obteres instruções para a ligação do Adaptador
+LAN da Wii e informações acerca do cabo LAN necessário. (O Adaptador LAN da Wii
+não suporta PPPoE).
+Ver na página 127 os detalhes do fácil ajuste da Internet, para a utilização do Adaptador
+LAN da Wii.
+Adaptador LAN da Wii
+(RVL-015)
+Cabo LAN
+Selecções da Configuração da Internet Quando Utilizares o Conector USB Wi-Fi da Nintendo
+Antes de utilizares o processo seguinte de Configuração da Internet, certifica-te de que instalaste o software
+de Registo do Nintendo Wi-Fi USB Connector no computador que vais utilizar com esse conector. Ver o manual
+incluído com o Nintendo Wi-Fi USB Connector (vendido separadamente), para obteres mais informações sobre
+uma correcta instalação.
+Selecciona a opção
+CONNECTION SETTINGS
+(Definições de Ligação).
+1 Certifica-te de que o
+Nintendo Wi-Fi USB
+Connector está ligado
+ao PC e, em seguida,
+selecciona WIRELESS
+CONNECTION
+(Ligação sem Fios).
+3
+Selecciona uma ligação
+livre, indicada por NONE
+(Nenhuma).
+2 Selecciona NINTENDO
+Wi-Fi USB CONNECTOR
+(Conector USB Wi-Fi da
+Nintendo).
+4
+NOTA: A WiiConnect24 está disponível somente quando o teu PC estiver ligado à corrente e ligado à Internet.
+Modem de
+Cabo / DSL
+Ligação à Internet
+de Banda Larga
+++
+Router sem fios Modem de
+Cabo / DSL
+Ligação à Internet
+de Banda Larga
+++
+Router de Banda
+Larga
+Ligação à Internet
+de Banda Larga
+Modem de
+Cabo / DSL
+PC + Nintendo
+Wi-Fi USB Connector
+Consola WiiRouter com fios
+Nintendo Wi-Fi USB Connector (Ver a próxima página)
+Mesmo não possuindo uma rede sem fios para todos os teus dispositivos,
+podes estabelecer uma ligação sem fios para a tua Wii. Se tiveres um PC
+a executar o Windows XP ou Windows Vista directamente ligado à
+Internet de alta velocidade, podes ligar o Nintendo Wi-Fi USB Connector
+(vendido separadamente) a uma porta USB livre do teu PC. Assim que in-
+stalares o software fornecido com o Nintendo Wi-Fi USB Connector, facil-
+mente farás a ligação sem fios da tua Wii.
+NOTA: A WiiConnect24 apenas pode ser utilizada com o computador a funcionar.
+Router sem fios (Ponto de Acesso) (Ver as páginas 124 – 125)
+NOTA:
+• O termo ponto de acesso é utilizado ao longo deste manual com o significado
+de “pontos de acesso LAN sem fios”.
+• Utiliza um ponto de acesso compatível 802.11.
+• Se quiseres configurar a ligação à Internet manualmente, consulta a
+página 126.
+Nintendo Wi-Fi
+USB Connector
+Ponto de Acesso
+Router sem fios AOSS™ (Ponto de acesso) – ver a página 125 – 126
+125
+A consola Wii procurará
+todos os pontos de acesso
+identificáveis nas proximi-
+dades. Selecciona o teu
+ponto de acesso a partir
+da lista. Introduz a infor-
+mação de segurança, se
+aplicável. Se surgir algum
+problema, ver a página 134, a “Resolução de
+Problemas”.
+Acerca dos ícones de bloqueio das definições
+da ligação.
+Não necessitas de introduzir uma chave de
+encriptação.
+Necessitas de introduzir uma chave de
+encriptação para te ligares à Internet.
+Selecciona o ponto de acesso para prosse-
+guires para o Ecrã de Entrada da Chave
+de Encriptação. Introduz as informações
+de segurança necessárias que foram regi-
+stadas para o ponto de acesso.
+124
+Depois de confirmares que o
+Nintendo Wi-Fi USB Connector
+está preparado, selecciona a
+opção NEXT (Seguinte).
+Quando visualizares este ecrã,
+continua a configuração no PC,
+como a seguir se descreve.
+Deverás visualizar um ícone da Ferramenta de Registo
+do Nintendo Wi-Fi USB Connector, na barra de tarefas
+do teu Windows XP ou Windows Vista . Clica duas
+vezes no ícone para iniciares a ferramenta. Ser-te-ão
+mostradas todas as consolas no raio de acção sem
+fios, listadas pelos nicks. Selecciona a consola Wii
+para a qual pretendes estabelecer uma ligação sem
+fios e, em seguida, clica em GRANT PERMISSION
+TO CONNECT (Autorizar a ligação) a partir do
+menu que aparecer.
+Ícone da Ferramenta de Registo do
+Nintendo Wi-Fi USB Connector
+Depois de estabeleceres a
+ligação da Wii com o PC,
+verás uma opção NEXT
+(Seguinte) na Configuração
+da Internet da consola Wii.
+Seleccione NEXT (Seguinte).
+7
+Wii5
+PC6
+Selecciona OK para testares
+a ligação.
+8
+Se o teste for bem sucedido, concluíste a Configuração da Internet e a tua Wii está ligada sem fios. Se o
+teste falhar, ver a secção “Resolução de Problemas” deste manual (ver a página 134).
+Selecções de Configuração da Internet para Procurar um Ponto de Acesso
+Selecciona a opção
+CONNECTION SETTINGS
+(Definições de Ligação).
+1
+Selecciona WIRELESS
+CONNECTION (Ligação
+sem fios).
+3
+Selecciona uma ligação
+livre, indicada por NONE
+(Nenhuma).
+2
+Selecciona SEARCH FOR
+AN ACCESS POINT
+(Procurar um Ponto de
+Acesso).
+4
+Selecciona OK.6
+Selecciona OK para testares
+a ligação.
+7
+5
+Se o teste for bem sucedido, concluíste a Configuração da Internet e a tua Wii está ligada sem fios. Se o
+teste falhar, ver a secção “Resolução de Problemas” deste manual (ver a página 134).
+127126
+Selecções de Configuração da Internet para Ligar Manualmente um Ponto de Acesso
+Antes de tentares ligar manualmente o teu ponto de acesso, tenta encontrá-lo primeiro seguindo as
+instruções da página anterior.
+Para ligares manualmente,
+selecciona a opção
+CONNECTION SETTINGS
+(Definições de Ligação).
+Selecciona CONSOLE
+INFORMATION (Informação
+da Consola) se precisares de verificar o endereço
+MAC. Esta informação pode ser necessária para
+a configuração manual de uma ligação à Internet.
+1
+Selecciona WIRELESS
+CONNECTION (Ligação
+sem fios).
+3
+Selecciona uma ligação
+livre, indicada por NONE
+(Nenhuma).
+2
+Selecciona MANUAL
+SETUP (Configuração
+Manual).
+4
+Selecciona OK para testar a
+ligação.
+Se o teste for bem sucedido, concluíste a Configuração da Internet e a tua Wii está ligada sem fios. Se o
+teste falhar, ver a secção “Resolução de Problemas” deste manual (ver a página 134).
+Se o teste for bem sucedido, concluíste a Configuração da Internet e a tua Wii está ligada. Se o teste falhar,
+ver a secção “Resolução de Problemas” deste manual (ver a página 134).
+Se o teste for bem sucedido, concluíste a Configuração da Internet e a tua Wii está ligada. Se o teste
+falhar, ver a secção “Resolução de Problemas” deste manual (ver a página 134).
+Selecções de Configuração da Internet para um Adaptador LAN da Wii
+Se possuíres uma rede LAN com fios de alta velocidade, em vez de uma rede sem fios, podes ligar a Wii di-
+rectamente à LAN com fios com um Adaptador LAN da Wii.
+Ver o manual do adaptador para obter informações sobre como ligar um Adaptador LAN da Wii.
+Quando estiveres preparado, segue os seguintes passos do processo de Configuração da Internet.
+Selecciona a opção
+CONNECTION SETTINGS
+(Definições de Ligação).
+1 Selecciona WIRED
+CONNECTION (Ligação
+com fios).
+3
+Selecciona uma ligação
+livre, indicada por NONE
+(Nenhuma).
+2 Selecciona OK para testar a
+ligação.
+4
+NOTA: Selecciona CONSOLE INFORMATION (Informação da Consola) se precisares de verificar o endereço
+MAC. Esta informação pode ser necessária para a configuração manual de uma ligação à Internet.
+Ligação à Internet
+de Banda Larga
+Modem de
+Cabo / DSL
+Router com fios Adaptador
+LAN da Wii
+Consola Wii
+Selecções de Configuração da Internet para um Ponto de Acesso AOSS™
+Se o ponto de acesso utilizado suporta o sistema AOSS (BUFFALO INC.), podes configurar as tuas
+definições de Internet com esta função. Para obteres informação detalhada, consulta o manual de
+instruções do teu ponto de acesso.
+NOTA: Se já estás a utilizar outros dispositivos sem fios, as definições do teu ponto de acesso poderão ser
+alteradas, ao utilizares o sistema AOSS.
+Selecciona a opção
+CONNECTION SETTINGS
+(Definições de ligação).
+1 Selecciona WIRELESS
+CONNECTION (Ligação
+sem fios).
+3
+Selecciona uma ligação
+livre, indicada por NONE
+(Nenhuma).
+2 Selecciona a opção AOSS.4
+Consola Wii:
+Segue as instruções no ecrã
+do TV.
+Ponto de Acesso AOSS:
+Prime o Botão AOSS (o inter-
+ruptor SET), mantendo-o sob pressão até que
+todos os LEDs correspondentes se iluminem.
+Se o procedimento falhar várias vezes, aguarda
+3 minutos e tenta novamente.
+5 Selecciona OK para testar a
+ligação.
+7
+Selecciona OK.6
+129128
+WiiConnect24™
+A WiiConnect24 permite que a consola Wii receba, automaticamente, uma grande variedade de dados.
+Utiliza as definições da WiiConnect24 para ligares (ON) e desligares (OFF) a WiiConnect24 e para permitires
+que o Modo de Espera receba dados, automaticamente, 24 horas por dia, mesmo que o sistema não esteja
+em utilização activa (o modem ou o router têm de estar ligados para receber a informação automaticamente).
+ON/OFF (Ligar/desligar)
+Quando a WiiConnect24 estiver ligada (ON), a consola Wii utilizará, automatica-
+mente, a ligação à Internet de alta velocidade, para aceitar dados de uma varie-
+dade de serviços, incluindo o envio de mensagens para o Painel de Mensagens
+da Wii e a recepção de mensagens sobre novas funcionalidades da Wii. Desliga
+(OFF) a WiiConnect24 se não pretenderes receber esta informação. Depois de
+concluíres, confirma a sua selecção.
+Ligação de Espera
+Se ligares (ON) a tua WiiConnect24 (vide supra), podes configurar a
+WiiConnect24 para operar em Modo de Espera. Isto permite à Wii receber
+automaticamente mensagens da WiiConnect24 e informação, mesmo que o
+sistema não esteja em utilização activa.
+Ligue a opção de Espera (ON) se pretenderes que a WiiConnect24 opere 24
+horas por dia. Desliga-a (OFF) se pretenderes que esta apenas aceite dados
+quando estiver a ser utilizada activamente. Depois de concluíres, confirma a
+tua selecção.
+SLOT ILLUMINATION (Iluminação da ranhura)
+Para permitir saber quando a WiiConnect recebeu dados, a ranhura para discos
+piscará. Selecciona a opção que desejas e, em seguida, confirma a tua selecção.
+BRIGHT (Claro) A ranhura para Discos da Wii piscará azul claro quando a WiiConnect24 receber novos
+dados.
+DIM (Escuro) A ranhura para Discos da Wii piscará azul escuro quando a WiiConnect24 receber novos
+dados.
+OFF (Desligado) A ranhura para Discos da Wii não piscará quando a WiiConnect24 receber novos dados.
+Idioma
+Podes alterar a definição de idioma para os menus e ecrãs da consola Wii,
+seleccionando Inglês, Francês, Alemão, Italiano, Espanhol e Holandês. Depois
+de concluíres, confirma a tua selecção.
+Formatar a Memória do Sistema Wii
+Esta opção do sistema é utilizada para eliminar todos os Canais e todos os
+dados que foram guardados na consola Wii. Quando concluíres, ser-te-á pedido
+que desligues a tua consola Wii.
+Selecciona a opção FORMAT (Formatar) se pretenderes eliminar todos os Canais
+e dados guardados. Em seguida, volta a seleccionar FORMAT (Formatar) no menu
+para confirmares a tua escolha.
+NOTA: Os dados apagados não podem ser recuperados. Se apagares acidentalmente da memória do teu
+sistema Wii conteúdo transferido, podes voltar a transferi-lo através do Canal da Loja Wii.
+Esta opção do sistema elimina apenas Canais (incluindo o vídeo “Wii – See what you can do on the
+internet“ (Wii – vê o que podes fazer na Internet)) e dados guardados na consola Wii. A informação guarda-
+da no Canal da Loja Wii, incluindo registos das tuas transacções e direitos ao software transferido, não será
+apagada com esta opção. Assim sendo, podes voltar a transferir o software transferido previamente sem uti-
+lizar quaisquer Wii Points.
+NOTA: Quando a Memória do Sistema Wii é formatada, o vídeo “Wii – See what you can do on the
+internet“ (Wii – vê o que podes fazer na Internet) será apagado, não sendo possível a sua recuperação ou
+nova transferência.
+Para remover a tua Conta de Canal da Loja Wii e eliminar informação guardada no Canal da Loja Wii, incluindo
+os teus Wii Points actualmente registados e o software transferido, segue as instruções de formatação do
+Canal da Loja Wii que em baixo se descrevem. Não te esqueças de que, após a transferência, só podes vol-
+tar a transferir o software se utilizares Wii Points adicionais.
+País
+Podes modificar a definição de país da tua consola Wii. Selecciona o teu país
+de residência.
+Actualização do Sistema Wii
+Seleccionar esta opção para ligar à Internet e verificar novas funcionalidades ou
+actualizações do sistema. Quando te ligares à Internet pela primeira vez utilizan-
+do a consola Wii, terás de efectuar uma actualização. Posteriormente, aconselha-
+mos-te a que utilizes esta função com frequência de modo a garantir que a tua
+consola Wii dispõe sempre do software mais recente. Poderás ainda ter de actua-
+lizar a Wii para utilizares determinadas funcionalidades. Nalguns casos, o proces-
+so de actualização poderá demorar algum tempo, dependendo da ligação à
+Internet: desde que a barra de progresso continue a avançar, não há razão para
+preocupações.
+Deves eliminar primeiro o teu Canal da Loja Wii e, depois, formatar a Memória do Sistema Wii, antes de
+venderes ou, de algum modo, transferires a tua consola Wii para terceiros. Para mais informações sobre
+privacidade e protecção de informação pessoal, ver a página 119.
+• Eliminar a Actividade da Conta do Canal da Loja Wii e Licenças
+Todas as tuas actividades no Canal da Loja Wii estão ligadas à tua consola Wii, incluindo os registos das tuas
+transacções e do software transferido, os Wii Points de que dispões e outros dados fornecidos através do
+Canal da Loja Wii. Para eliminar informação do teu Canal da Loja Wii, incluindo os registos das transacções
+e os direitos ao software transferido, acede ao Canal da Loja Wii, selecciona a opção SETTINGS/OTHER
+(Definições/Outro) e, em seguida, selecciona REMOVE Wii SHOP CHANNEL ACCOUNT (Remover a conta
+do Canal da Loja Wii).
+131130
+12 Menu HOME
+Menu HOME
+NOTA: Se seleccionares o MENU Wii ou RESET (Reiniciar), perderás permanentemente toda a informação
+não guardada do programa que estiver a ser executado.
+NOTA: O ajuste das definições de volume e de vibração vão afectar todos os Comandos Remotos Wii ou
+Comandos Remotos Wii Plus ligados à consola Wii.
+Terminar jogos ou programas
+que estão actualmente em
+funcionamento e regressar ao
+Menu Wii.
+Fechar o Menu HOME e regres-
+sar ao menu anterior.
+Reiniciar jogos ou programas Wii
+e regressar ao Ecrã de Título.
+Visualizar o estado da bateria para
+todos os comandos remotos que
+estão ligados à consola.
+Seleccionar para abrir o Ecrã de
+Definições do Comando
+Remoto Wii.
+Visualizar guias transferidos para
+determinado software ou
+programas (Apenas disponível se
+existir conteúdo transferido).
+Ecrã de Definições do Comando Remoto Wii
+Ligar (ON) ou desligar (OFF) a
+Função Rumble (Vibração)
+(ver a NOTA em baixo)
+Ajustar o volume do altifalante
+do Comando Remoto Wii ou
+do Comando Remoto Wii Plus.
+Também podes utilizar os Botões
++ e – do Comando Remoto Wii
+ou do Comando Remoto Wii Plus.
+Visualizar o estado da bateria para
+todos os Comandos Remotos Wii
+ou Comandos Remotos Wii Plus
+que estão ligados à consola.
+Fecha o Menu de Definições e
+regressa ao Menu HOME.
+Voltar a ligar os
+Comandos Remotos Wii ou os
+Comandos Remotos Wii Plus.
+Utiliza-os para modificar o
+Comando Remoto Wii ou o
+Comando Remoto Wii Plusque
+estás a utilizar ou para alterares
+a ordem do número do jogador
+(ver em baixo).
+Sincronização do Comando Remoto Wii ou Comando Remoto Wii Plus –
+para cada Comando Remoto Wii ou Comando Remoto Wii Plus, segue os
+seguintes passos:
+1. Selecciona a opção RECONNECT (Voltar a Ligar).
+2. Prime simultaneamente os Botões 1 e 2 no Comando Remoto Wii ou
+Comando Remoto Wii Plus.
+3. O LED de Jogador piscará até que seja estabelecida uma ligação.
+4. Prime em qualquer botão para regressares ao Menu HOME.
+A ordem que seguires na sincronização dos comandos remotos vai determinar a ordem dos jogadores. Ver
+para mais informações sobre a sincronização de um Comando Remoto Wii ou Comando Remoto Wii Plus, as
+páginas 70 – 71 do Manual de Operação da Wii – Configuração do Sistema.
+Este menu aparece ao premires o Botão HOME do Comando Remoto Wii Plus.
+A partir deste menu, podes terminar ou reiniciar programas Wii, visualizar
+guias de operação de determinados programas transferidos e ajustar as
+definições do Comando Remoto Wii ou do Comando Remoto Wii Plus).
+Para seleccionares uma opção do menu, aponta
+para a mesma com o Comando Remoto Wii Plus
+e prime o Botão A.
+133132
+13 Teclado da Wii
+NOTA: Muitas funções nos teclados QWERTY e estilo telemóvel são as mesmas. Os componentes com a
+mesma função estão descritos na página de instruções do teclado QWERTY.
+Exemplo da utilização da função de palavra prevista no teclado de Telemóvel para a palavra “hello”.
+ghi
+Selecciona a tecla que
+inclua o “h”.
+def
+Selecciona a tecla que
+inclua o “e”.
+jkl
+Selecciona a tecla que
+inclua o “l”.
+hello
+Selecciona “hello” da lista
+de palavras previstas.
+NOTA: Os teclados USB não funcionam com o Everybody Votes Channel (Canal de Voto Global).
+Teclado USB
+Portas
+USB
+Consola Wii
+(vista posterior)
+Utilizar um teclado USB com a consola Wii
+Podes introduzir texto utilizando um teclado USB à venda nas lojas da especialiade.
+Utilização do Teclado
+O Ecrã do Teclado aparecerá em certos programas onde é necessário inserir texto, nomeadamente, na
+criação de texto das mensagens no Painel de Mensagens da Wii ou na edição de um Mii no Canal Mii.
+Mostra palavras previstas.
+Desloca-te através das palavras
+disponíveis, utilizando os
+símbolos .
+NOTA: Esta função só está
+disponível no Painel de
+Mensagens da Wii.
+Selecciona os caracteres que
+pretendes introduzir.
+Muda para letras maiúsculas.
+Muda de letras minúsculas para
+maiúsculas na letra seguinte.
+(Em alternativa, podes manter
+sob pressão o Botão B
+no Comando Remoto Wii Plus.)
+Altera a função da palavra
+prevista entre Inglês, Francês,
+Alemão, Italiano, Espanhol
+ou Holandês.
+Regressa ao ecrã anterior.
+Insere um espaço.
+Liga ou desliga a função de
+palavra prevista.
+Desloca-te para cima e para
+baixo para visualizares os
+caracteres introduzidos.
+Mostra os caracteres que foram
+introduzidos. Utiliza o - Controlo
+para mover o cursor.
+Apaga um carácter.
+(Em alternativa, podes utilizar o
+Botão – (menos) do Comando
+Remoto Wii Plus.)
+Insere terminar a linha actual.
+Selecciona símbolos adicionais a
+partir de uma lista.
+Confirma os caracteres
+introduzidos.
+Selecciona estilos de
+teclados.
+Teclado QWERTY
+Introduz o primeiro carácter em
+maiúscula.
+Selecciona o carácter que
+pretendes introduzir. Utiliza os
+Botões A e B para seleccionares,
+em cada tecla, os caracteres que
+pretendes usar.
+Introduz um carácter minúsculo.
+Introduz um carácter maiúsculo.
+Introduz um carácter numérico.
+Desloca-te para cima e para
+baixo para visualizares os
+caracteres introduzidos.
+Mostra os caracteres que foram
+introduzidos. Utiliza o - Controlo
+para mover o cursor.
+Liga ou desliga a função de
+palavra prevista.
+Teclado Estilo Telemóvel
+Para inserir um espaço,
+prime o Botão direito do
+- Controlo e selecciona
+a tecla de espaco.
+135134
+14 Resolução de Problemas
+(Antes de procurares assistência, revê os seguintes problemas e soluções.)
+O teu ponto de acesso não se encontra na lista quando seleccionas SEARCH FOR AN ACCESS
+POINT (Procurar um Ponto de Acesso)
+•Assegura-te de que o teu ponto de acesso está ligado.
+• Se possível, aproxima-te do ponto de acesso ou reorienta a consola, de modo a não existir qualquer
+obstrução entre esta e o ponto de acesso.
+• O teu ponto de acesso pode não estar a emitir o teu SSID. Verifica, no teu computador, as definições do
+teu router e configura o teu router para emitir SSID ou introduz o SSID na Ligação Manual de um Ponto
+de Acesso. Ver a página 126.
+Teste de ligação sem êxito ou incapaz de se ligar ao serviço
+• Verifica a força do sinal e, se possível, aproxima-te do ponto de acesso ou reorienta a consola, de modo a
+não existir qualquer obstrução entre esta e o ponto de acesso.
+• Assegura-te de que tens a última actualização do Firmware para o teu router. Verifica-o junto do fabricante
+do router ou do fornecedor de serviços de Internet que forneceu o router.
+• Poderás ter de ajustar a taxa de transmissão do teu router. Alguns routers têm definições especiais, como
+“Turbo Boost” ou “G-Nitro”, que devem ser desligadas.
+• O teu ponto de acesso pode ter activo o Filtro MAC. Verifica as definições do teu router no computador.
+Podes ter de introduzir o teu Endereço MAC da consola Wii. Este pode ser visualizado se escolheres
+CONSOLE INFORMATION (Informação da Consola) depois de seleccionares a opção INTERNET.
+• O teu ponto de acesso pode não estar a emitir o teu SSID. Verifica, no teu computador, as definições do
+teu router e configura o router para emitir SSID ou introduz o SSID na Ligação Manual de um Ponto de
+Acesso. Ver a página 126.
+• Tenta atribuir à tua consola Wii um endereço IP estático. Acede às definições do teu router e encontra
+a lista de endereços IP disponíveis (esta encontra-se normalmente na informação do DHCP). Quando
+encontrares esta informação, selecciona um dos endereços IP disponíveis e introduz na Ligação Manual
+a um Ponto de Acesso. Ver a página 126.
+A energia desliga-se de repente
+• Desliga a Ficha AC da Fonte de Alimentação da Wii e verifica se as saídas de ar estão bloqueadas por pó
+ou detritos. Limpa-as, se necessário; volta a ligar a Ficha AC e experimenta voltar a ligar a consola Wii.
+• Certifica-te de que a área em torno da consola Wii permite a sua ventilação adequada e de que a consola
+não se encontra junto a outras fontes de calor.
+Estão disponíveis em http://wiisupport.nintendo-europe.com mais informações sobre resolução de
+problemas e ajuda detalhada sobre a configuração da ligação à Internet.
+Não consegues ler um Cartão SD no Canal Foto ou no Menu de Cartão SD
+(os dados não são apresentados)
+• Certifica-te de que o Cartão SD está completamente inserido na ranhura. Experimenta retirar e voltar
+a inserir o Cartão SD.
+• Verifica o Cartão SD num computador ou telemóvel para confirmar os seus conteúdos e legibilidade.
+• Certifica-te de que o conteúdo está num formato legível pelo Canal Foto ou pelo Menu de Cartão SD.
+Ver a página 97 para informações sobre ficheiros de formatos suportados.
+O Comando Remoto Wii Plus não vibra
+• Visita o Menu HOME e verifica se a função de Vibração está ligada (ver a página 131).
+• Certifica-te de que o teu jogo inclui a função de Vibração.
+O Comando Remoto Wii Plus não tem som
+• Visita o Menu HOME e verifica se o volume está ligado (ver a página 131).
+• Certifica-te de que o jogo que estás a jogar inclui som proveniente do altifalante do
+Comando Remoto Wii Plus.
+Não consegues transferir jogos do Canal da Loja Wii
+• Certifica-te de que possuis os Wii Points necessários para os produtos do Canal da Loja Wii.
+• Verifica se tens restrições na utilização dos Wii Points.
+• Verifica o estado de Controlo Parental.
+A velocidade de transferência de jogos e actualizações a partir do Canal da Loja Wii é muito lenta.
+• Sintoniza o router no canal 1 ou 11.
+Os comandos não funcionam com os jogos da Wii, jogos da Consola Virtual ou títulos WiiWare
+• Certifica-te de que estás a usar o comando correcto. Poderás encontrar esta informação na embalagem e
+manual de instruções do jogo.
+• Se estiveres a jogar um jogo transferido do Canal da Loja Wii, verifica o Ecrã de Confirmação de
+Comando no Ecrã de detalhes do título no Canal para determinares os comandos utilizados para o
+jogo.
+• Se estiveres a utilizar o Comando Clássico/Comando Clássico Pro, certifica-te de que este está bem li-
+gado ao Comando Remoto Wii Plus.
+• Se estiveres a utilizar o Comando Remoto Wii Plus, certifica-te de que nenhum outro acessório está li-
+gado ao conector para Extensão Externa, a menos que tal seja necessário para o jogo em questão.
+• Certifica-te de que o Comando Remoto Wii Plus está sincronizado com a consola Wii.
+137136
+15 Mensagens e Códigos Erro
+Se for detectado um erro, pode ser visualizada no ecrã de TV uma mensagem* como a que se segue.
+Procede de acordo com a seguinte tabela:
+* O texto pode ser alvo de alterações em futuras actualizações do sistema Wii.
+Mensagem de Erro Experimenta
+An error has occurred.
+Press the EJECT Button, remove the
+Disc, and turn off the power to the
+console. Please refer to the Wii
+Operations Manual for details.
+Ocorreu um erro.
+Carrega no Botão EJECT, retira o
+disco e desliga a alimentação da con-
+sola. Consulta o Manual de Operação
+da Wii para obteres detalhes.
+Primeiro, desliga a consola Wii (Modo de Espera), retira a ficha AC (RVL-002(EUR)) da
+Fonte de Alimentação da tomada. Em seguida, verifica se o disco está sujo ou riscado.
+Se estiver sujo, limpa o disco com um pano macio do centro para as bordas. Espera
+cerca de 5 minutos. Liga a ficha AC do adaptador AC na tomada e liga a consola.
+Se aparecer a mesma mensagem, a consola Wii pode estar danificada. Desliga a
+consola Wii imediatamente. Retira a ficha AC do adaptador AC da tomada e visita
+http://wiisupport.nintendo-europe.com, para obteres informação adicional sobre
+resolução de problemas.
+The Wii Remote is experiencing an
+error. Please refer to the Wii
+Operations Manual for details.
+Ocorreu um erro no Comando
+Remoto Wii. Consultar o Manual de
+Operação da Wii para mais detalhes.
+The Disc could not be read. Please
+refer to the Wii Operations Manual for
+details.
+Não é possível ler o disco. Consultar o
+Manual de Operação da Wii para mais
+detalhes.
+Ver a resolução de problemas do Comando Remoto Wii Plus no Manual de Operação
+da Wii – Configuração do Sistema.
+O Disco pode estar sujo ou danificado. Primeiro, remove o disco e verifica se está con-
+taminado, sujo, riscado ou se possui qualquer outra irregularidade. Se necessário, limpa
+o disco com um pano de algodão macio (não utilizes papel) do centro para as bordas.
+Em seguida, volta a inserir o disco na consola Wii. Se surgir a mesma mensagem de erro,
+visita http://wiisupport.nintendo-europe.com, para obteres informação adicional sobre
+resolução de problemas.
+There is not enough available space in
+the Wii System Memory. (...)
+Não há suficiente espaço disponível na
+Memória do Sistema Wii. (...)
+• A partir do Ecrã de Gestão de Dados, movimenta ficheiros para o Cartão SD ou
+apaga ficheiros (ver a página 112 sobre Definições e Gestão de Dados da Wii).
+• Se este procedimento não funcionar, tenta apagar os dados guardados do canal que
+estiver emexecução. Se continuar a aparecer a mesma mensagem de erro, visita
+http://wiisupport.nintendo-europe.com, para obteres informação adicional sobre
+resolução de problemas.
+The Wii System Memory has been da-
+maged. Please refer to the Wii
+Operations Manual for details.
+A Memória do Sistema Wii foi corrom-
+pida. Consultar o Manual de Operação
+da Wii para mais detalhes.
+A Memória do Sistema Wii está corrompida. Ver a ajuda de resolução de problemas no
+Manual de Operação da Wii.
+The device inserted in the SD Card slot
+can’t be used.
+Não é possível utilizar o dispositivo
+introduzido na ranhura para Cartões SD.
+Dependendo do tipo de software utilizado, segue os conselhos seguintes:
+• Ao utilizar Cartões SD
+Verifica os dados guardados num computador. Se não forem apresentados quaisquer
+ficheiros, o Cartão SD pode estar danificado.
+• Ao utilizar Cartões SDHC
+Consulta o manual de instruções do software e a parte posterior da embalagem para
+verificar se o jogo é compatível com Cartões SDHC. Dependendo do tipo de software
+utilizado, segue os conselhos seguintes:
+- Quando utilizares software Wii compatível com Cartões SDHC, retira o Cartão SDHC e
+volta a inseri-lo.
+- Quando utilizares software Wii que não seja compatível com Cartões SDHC, retira o
+Cartão SDHC da ranhura para Cartões SD.
+Quando a mesma mensagem de erro for apresentada mesmo depois de seguires a su-
+gestão anterior, verifica os dados guardados num computador. Se não forem apresenta-
+dos quaisquer ficheiros, o Cartão SDHC poderá estar danificado.
+Código de Erro Situação Experimenta
+50100-
+50199
+Consulta
+p. 121Could not connect to the Internet.
+Impossível estabelecer ligação à
+Internet.
+Tentar novamente mais tarde. Se o problema continuar,
+contacta o teu Centro de Serviços Nintendo.
+Em caso de problemas (por exemplo, definições de Internet incorrectas ou falha no teste de ligação), são
+apresentados uma mensagem e código de erro. Consulta a tabela em baixo para obteres instruções para a
+resolução do problema. Em alternativa, verifica a Configuração da Internet (ver a página 121), visita
+http://wiisupport.nintendo-europe.com ou consulta o manual de instruções do teu dispositivo de rede.
+50200-
+50299
+p. 121No connection setting. Choose a
+setting from the Internet Set-Up
+screen.
+Sem definição de ligação.
+Escolher uma definição do ecrã
+de Configuração da Internet.
+Verificar as definições de ligação do dispositivo a que
+desejas ligar-te.
+50300-
+50399
+p. 121The Internet settings are not
+correct.
+As definições de Internet não
+estão correctas.
+Verificar as definições do dispositivo de rede a que desejas
+estabelecer ligação.
+50400-
+50499
+- - - -The USB plug of the Wii LAN
+Adapter is not properly inserted.
+A ficha USB do Adaptador LAN da
+Wii não foi introduzida correcta-
+mente.
+Certificar-te de que a ficha USB do Adaptador LAN da
+Wii está totalmente introduzida.
+51000-
+51099
+p. 121Cannot find access point. Check
+that SSID is correct.
+Impossível encontrar o ponto de
+acesso. Confirmar se o SSID está
+correcto.
+Verificar o SSID do dispositivo de rede a que desejas
+estabelecer ligação.
+51300-
+51399
+p. 121Cannot connect to the Wii LAN
+Adapter for unknown reason.
+Por razões desconhecidas, não é
+possível estabelecer ligação a um
+ponto de acesso LAN Sem Fios.
+• Verificar as definições do ponto de acesso.
+• Verificar se a chave de encriptação (se necessária) e
+outras definições de segurança da Wii correspondem
+às do ponto de acesso.
+• Na ligação à Internet com um Nintendo Wi-Fi USB
+Connector, assegurar a escolha da definição que
+permite a ligação.
+51400-
+51499
+- - - -Cannot connect to the Wii LAN
+Adapter for unknown reason.
+Por razões desconhecidas, é
+impossível estabelecer ligação
+ao Adaptador LAN da Wii.
+• Verificar se a ficha USB do Adaptador LAN da Wii está
+totalmente introduzida na consola Wii.
+• Certificar-te de que a corrente eléctrica e o dispositivo
+de rede estão ligados.
+• Verificar se o Adaptador LAN da Wii está ligado correcta-
+mente ao dispositivo de rede.
+• Poderá existir um problema com o dispositivo de rede.
+Experimenta verificar as suas definições.
+52000-
+52099
+p. 121Could not automatically obtain IP
+address.
+Não foi possível obter automatica-
+mente o endereço IP.
+• Certificar-te de que a função de Servidor DHCP do
+dispositivo de rede está activada.
+• Se a função de Servidor DHCP não puder ser utilizada,
+experimenta ajustar as definições do dispositivo a que
+desejas ligar-te.
+• No caso de uma ligação LAN sem fios, experimenta
+certificar-te de que as definições de segurança e chave
+de encriptação (se necessária) correspondem às do
+ponto de acesso.
+138
+Contactos
+139
+16
+Código de Erro Situação Experimenta
+52200-
+52299
+Consulta
+- - - -Cannot connect to server for the
+connection test.
+Impossível estabelecer ligação ao
+servidor para efectuar o teste de
+ligação.
+Tentar novamente mais tarde.
+52600-
+52699
+p. 121Could not connect to NAT connec-
+tion test server.
+Impossível estabelecer ligação ao
+servidor de teste de ligação NAT.
+Se esta for uma situação frequente, poderá existir um
+problema com o teu ambiente de Internet. Experimenta
+verificar as tuas Definições de Ligação, etc..
+52700-
+52799
+p. 121Due to a network device with the
+same IP address, the Wii console
+cannot connect to the Internet.
+Devido à existência de um disposi-
+tivo de rede com o mesmo ende-
+reço IP, a consola Wii não conse-
+gue estabelecer ligação à Internet.
+Ajustar as Definições de Ligação.
+54000-
+54099
+p. 121Due to a communication error, you
+have been disconnected from the
+Internet.
+Devido a um erro de comunicação,
+foste desligado da Internet.
+Tentar novamente mais tarde. Se o problema persistir,
+contacta o teu Centro de Serviços Nintendo.
+32001 p. 121Cannot connect to System Update
+server.
+Impossível estabelecer ligação ao
+servidor de Actualização de
+Sistema.
+Tentar novamente mais tarde. Se o problema persistir,
+contacta o teu Centro de Serviços Nintendo.
+32002 p. 121Cannot connect to System Update
+server.
+Devido a um erro de rede, não foi
+possível efectuar a actualização de
+sistema.
+Tentar novamente mais tarde. Se o problema persistir,
+contacta o teu Centro de Serviços Nintendo.
+32003 p. 111Due to a network error, the system
+update was not possible.
+Devido à falta de espaço disponível
+na Memória do Sistema Wii, não
+foi possível efectuar a actualização.
+Transferir ficheiros guardados na Memória do Sistema Wii
+para um Cartão SD, ou apagar ficheiros.
+32004 p. 129Due to a lack of available space in
+the Wii System memory, the update
+was not possible.
+Devido a um erro, não foi possível
+efectuar a actualização de sistema.
+Contactar o teu Centro de Serviços Nintendo.
+52100-
+52199
+p. 121The Wii console could not connect
+to the Internet.
+A consola Wii não conseguiu
+estabelecer ligação à Internet
+• Verificar se o ambiente de Internet em utilização
+consegue aceder à Internet.
+• Verificar todas as definições de ligação após “Automatically
+Obtain IP Address” (Obter o Endereço IP automaticamente).
+• Se a opção “Automatically Obtain IP Address” (Obter o
+Endereço IP automaticamente), sob Definições de Ligação,
+não estiver activada, experimenta verificar se as definições
+de segurança e a chave de encriptação (se necessária)
+correspondem às definições do ponto de acesso.
+PortugalOs Serviços de Rede da Wii são operados pela Nintendo of Europe S.A.R.L.
+Nintendo Centre, 63760 Grossostheim, Alemanha
+E-mail: info@nintendo.de, Telefone: 06026 950-0
+IVA-NIPC: DE 132095955
+Empresa inscrita no Registo Mercantil de Aschaffenburg HRB 4276
+Director-geral: Satoru Shibata
+Para obteres assistência na tua língua, contacta-nos através de Nintendo Service Center.
+Telefone: 00351 808 78 0506 (Antes de telefonares, obtém a autorização da pessoa responsável pelo
+pagamento da conta telefónica. Marca o número com cuidado.)
+Email: NintendoServiceCenter@nintendo.pt
