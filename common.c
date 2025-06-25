@@ -18,7 +18,7 @@ long long timestamp() {
 }
 
 int cria_raw_socket(char* nome_interface_rede) {
-    nome_interface_rede = "enp7s0f0";
+    nome_interface_rede = "eno1";
     // Cria arquivo para o socket sem qualquer protocolo
     int soquete = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
     if (soquete == -1) {
@@ -511,13 +511,15 @@ void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* cu
         for (ssize_t i = 0; i < bytes - 4;) {                                               // Percorre o buffer procurando por frames válidos
             //printf("[Servidor DEBUG 2] Verificando byte %zd do buffer...\n", i);
             if (buffer[i] == MARCADOR) {                                                    // Verifica se o marcador é válido
-                printf("[Servidor DEBUG 3] MARCADOR (0x7E) encontrado!\n");
+                //printf("[Servidor DEBUG 3] MARCADOR (0x7E) encontrado!\n");
                 Frame f;
                 memcpy(&f, &buffer[i], FRAME_HEADER_SIZE);
 
                 size_t tamanho_declarado_dados = f.tamanho;
                 size_t tamanho_total_frame = FRAME_HEADER_SIZE + tamanho_declarado_dados;
-
+                
+                for (int i = 0; i < tamanho_total_frame; i++) printf ("%02X ", ((unsigned char*)(Frame*)buffer)[i]);
+		printf("\n");
                 // Verifica se o buffer realmente contém o frame inteiro
                 if (i + tamanho_total_frame > bytes) {
                     // Frame incompleto, não podemos processar, avança para o próximo byte
