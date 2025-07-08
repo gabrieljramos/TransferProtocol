@@ -15,3 +15,7 @@ The communication protocol is custom-built on top of Ethernet frames, handling m
 * **`game.c` / `game.h`**: Contains the core game logic, such as initializing the game, managing player movement, and tracking found treasures.
 * **`common.c` / `common.h`**: Includes shared functions used by both the client and server for network communication, such as creating raw sockets, framing messages, and handling the custom protocol.
 * **`queue.c` / `queue.h`**: A simple queue implementation used by the server to track the player's moves.
+
+#### Usage
+
+Must be ran with **`sudo`** due to the use of **`RAW_SOCKETS`**
