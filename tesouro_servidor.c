@@ -20,10 +20,11 @@ int main(int argc, char* argv[]) {
     current_pos.x = 7;
     current_pos.y = 0;
 
-    const char* interface = argv[1];
+    char* interface = argv[1];
     int sockfd = cria_raw_socket(interface);                                // Cria um raw_socket para a interface especificada
 
     escuta_mensagem(sockfd, 1, tesouros, &current_pos, NULL);               // Escuta mensagens do cliente
-    close(sockfd);                                                          // Fecha o socket
+    close(sockfd);      
+    free(tesouros);                                                    // Fecha o socket
     return 0;
 }
