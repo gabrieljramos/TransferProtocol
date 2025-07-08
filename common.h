@@ -17,8 +17,8 @@
 
 #define MARCADOR 0x7E
 #define MAX_DADOS 127
-#define TIMEOUT_MILLIS 1000
-#define MAX_RETRANSMISSIONS 5
+#define TIMEOUT_MILLIS 2100
+#define MAX_RETRANSMISSIONS 10
 
 
 typedef struct {
@@ -26,18 +26,20 @@ typedef struct {
     unsigned char tamanho;
     unsigned char seq;
     unsigned char tipo;
-    //unsigned int tamanho : 7;
-    //unsigned int seq    : 5;
-    //unsigned int tipo   : 4;
+    /*unsigned int tamanho : 7;
+    unsigned int seq    : 5;
+    unsigned int tipo   : 4;*/
     unsigned char checksum;
     unsigned char dados[MAX_DADOS];
 } __attribute__((packed)) Frame;
 
 long long timestamp();
-int cria_raw_socket(const char *interface);
+int cria_raw_socket(char* nome_interface_rede);
 unsigned char calcula_checksum(Frame *f);
-void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam);
+//void monta_frame(Frame *f, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam);
+unsigned char* monta_frame(unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam);
 //void envia_mensagem(int sockfd, const char *interface, unsigned char seq, Frame f);
-int espera_ack(int sockfd, unsigned char seq_esperado, int timeoutMillis);
+int espera_resposta(int sockfd, unsigned char seq_esperado, int timeoutMillis);
+void envia_resposta(int sockfd, unsigned char seq, unsigned char tipo, struct sockaddr_ll* origem, unsigned char *msg);
 int envia_mensagem(int sockfd, unsigned char seq, unsigned char tipo, unsigned char *dados, size_t tam, int modo_servidor, struct sockaddr_ll* destino);
 void escuta_mensagem(int sockfd, int modo_servidor, tes_t* tesouros, coord_t* current_pos, struct sockaddr_ll* cliente_addr);
